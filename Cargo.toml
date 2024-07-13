@@ -1,5 +1,5 @@
 [package]
-name = "kclassify"
+name = "klassify"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,5 +11,5 @@ log = "*"
 needletail = "*"
 
 [[bin]]
-name = "kclassify"
+name = "klassify"
 path = "src/main.rs"

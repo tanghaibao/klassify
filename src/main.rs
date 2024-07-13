@@ -1,7 +1,7 @@
 use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
-use kclassify::build;
+use klassify::build;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
