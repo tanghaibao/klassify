@@ -11,8 +11,19 @@ pub struct BuildArgs {
 }
 
 pub fn build(fasta_files: &Vec<String>) {
+    let mut all_sets = Vec::new();
     for fasta_file in fasta_files {
-        get_kmers(fasta_file);
+        all_sets.push(get_kmers(fasta_file));
+    }
+    for (fasta_file, kmer_set) in fasta_files.iter().zip(all_sets.iter()) {
+        let mut unique_kmers = kmer_set.clone();
+        for other_set in all_sets.iter() {
+            if other_set as *const _ == kmer_set as *const _ {
+                continue;
+            }
+            unique_kmers = unique_kmers.difference(other_set).cloned().collect();
+        }
+        log::info!("{}: {} unique kmers found", fasta_file, unique_kmers.len());
     }
 }
 
@@ -32,6 +43,6 @@ fn get_kmers(fasta_file: &str) -> HashSet<u64> {
             // );
         }
     }
-    log::info!("{} kmers found", kmer_set.len());
+    log::info!("{}: {} kmers found", fasta_file, kmer_set.len());
     kmer_set
 }
