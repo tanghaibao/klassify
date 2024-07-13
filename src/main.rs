@@ -31,7 +31,7 @@ fn main() {
     let args = Args::parse();
     match args.subcommand {
         SubCommand::Build(build) => {
-            build::build(&build.input);
+            build::build(&build.fasta_files);
         }
     }
 }

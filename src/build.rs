@@ -3,10 +3,9 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 pub struct BuildArgs {
     /// Input FASTA files
-    #[clap(short, long)]
-    pub input: Vec<String>,
+    pub fasta_files: Vec<String>,
 }
 
-pub fn build(args: &Vec<String>) {
-    println!("{:?}", args);
+pub fn build(fasta_files: &Vec<String>) {
+    println!("{:?}", fasta_files);
 }
