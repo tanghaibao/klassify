@@ -1,6 +1,15 @@
 [package]
-name = "kclassify"
+name = "klassify"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "*", features = ["derive"] }
+env_logger = "*"
+libc = "*"
+log = "*"
+needletail = "*"
+
+[[bin]]
+name = "klassify"
+path = "src/main.rs"
