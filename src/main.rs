@@ -1,6 +1,5 @@
-extern crate libc;
-
 use clap::Parser;
+use libc::{SIGPIPE, SIG_DFL};
 
 use kclassify::build;
 
@@ -25,7 +24,7 @@ fn main() {
     // RUST annoyingly panicked when piping results to `head` (which isn't technically an error)
     // so we need to disable this.
     unsafe {
-        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+        libc::signal(SIGPIPE, SIG_DFL);
     }
 
     let args = Args::parse();
