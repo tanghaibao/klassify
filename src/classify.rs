@@ -1,5 +1,6 @@
+use crate::info::load_kmer_db;
 use crate::models::{ClassifyResults, SingletonKmers};
-use bincode::deserialize_from;
+
 use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
@@ -7,7 +8,7 @@ use rayon::prelude::*;
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufReader, BufWriter, Write},
+    io::{BufWriter, Write},
     path::Path,
 };
 
@@ -26,17 +27,6 @@ pub fn classify(bincode_file: &str, reads_files: &Vec<String>) {
     reads_files.par_iter().for_each(|reads_file| {
         classify_one(&singleton_kmers, &kmer_to_file, reads_file);
     });
-}
-
-fn load_kmer_db(bincode_file: &str) -> SingletonKmers {
-    let reader = BufReader::new(File::open(bincode_file).unwrap());
-    let singleton_kmers: SingletonKmers = deserialize_from(reader).unwrap();
-    log::info!(
-        "Loaded singleton kmers (K={}) from `{}`",
-        singleton_kmers.kmer_size,
-        bincode_file
-    );
-    singleton_kmers
 }
 
 fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize> {
