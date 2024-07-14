@@ -92,11 +92,6 @@ fn classify_one(
                 counts[*file_index] += 1;
             }
         }
-        let scaled_counts = counts
-            .iter()
-            .zip(singleton_kmers.scaling_factors.iter())
-            .map(|(count, scaling_factor)| ((*count as f64) * scaling_factor) as i32)
-            .collect::<Vec<_>>();
         // Get the first part of the ID
         let id = String::from_utf8(record.id().to_vec())
             .unwrap()
@@ -108,17 +103,16 @@ fn classify_one(
             id,
             seq_len: record.seq().len(),
             counts,
-            scaled_counts,
         };
         let tag = results.tag(&singleton_kmers.fasta_files);
         let to_write = format!(
             "{}\t{}\t{}\t{}\t{}",
             results.id,
             results.seq_len,
-            results.scaled_counts.iter().sum::<i32>(),
+            results.counts.iter().sum::<i32>(),
             tag,
             results
-                .scaled_counts
+                .counts
                 .iter()
                 .map(|count| count.to_string())
                 .collect::<Vec<_>>()
