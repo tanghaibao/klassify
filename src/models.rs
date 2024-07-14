@@ -41,7 +41,9 @@ impl ClassifyResults {
             }
         }
         let half = total / 2;
-        if best_count + second_best_count > half {
+        if total == 0 {
+            "Unclassified:0,0".to_string()
+        } else if best_count + second_best_count > half {
             format!(
                 "{},{}:{},{}",
                 fasta_files[best_index],
