@@ -32,16 +32,22 @@ pub fn build(fasta_files: &Vec<String>) {
         .collect::<HashSet<_>>();
     log::info!("Singleton kmers: {}", singleton_kmers.len());
     // Find the unique kmers in each file
-    for (fasta_file, kmer_set) in fasta_files.iter().zip(all_sets.iter()) {
-        let singleton_kmers_per_file = kmer_set
-            .intersection(&singleton_kmers)
-            .collect::<HashSet<_>>();
-        log::info!(
-            "{}: {} singleton kmers found",
-            fasta_file,
-            singleton_kmers_per_file.len()
-        );
-    }
+    let mut singleton_sets = Vec::new();
+    (fasta_files, all_sets)
+        .into_par_iter()
+        .map(|(fasta_file, kmer_set)| {
+            let singleton_kmers_per_file = kmer_set
+                .intersection(&singleton_kmers)
+                .map(|&kmer| kmer)
+                .collect::<HashSet<_>>();
+            log::info!(
+                "{}: {} singleton kmers found",
+                fasta_file,
+                singleton_kmers_per_file.len()
+            );
+            singleton_kmers_per_file
+        })
+        .collect_into_vec(&mut singleton_sets);
 }
 
 fn get_kmers(fasta_file: &str) -> HashSet<u64> {
