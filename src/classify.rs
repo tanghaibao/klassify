@@ -38,10 +38,20 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
                 counts[*file_index] += 1;
             }
         }
+        let scaled_counts = counts
+            .iter()
+            .zip(singleton_kmers.scaling_factors.iter())
+            .map(|(count, scaling_factor)| (*count as f64) * scaling_factor)
+            .collect::<Vec<_>>();
         println!(
-            "{} => {}",
+            "{} =>\n {}\n {}",
             String::from_utf8(record.id().to_vec()).unwrap(),
             counts
+                .iter()
+                .map(|count| count.to_string())
+                .collect::<Vec<_>>()
+                .join("\t"),
+            scaled_counts
                 .iter()
                 .map(|count| count.to_string())
                 .collect::<Vec<_>>()

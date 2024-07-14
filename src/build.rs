@@ -53,10 +53,17 @@ pub fn build(fasta_files: &Vec<String>) {
         })
         .collect::<Vec<_>>();
     // Serialize the singleton kmers to a file
+    let counts = singletons
+        .iter()
+        .map(|x| x.len() as f64)
+        .collect::<Vec<_>>();
+    let max_count = counts.iter().cloned().fold(0. / 0., f64::max);
+    let scaling_factors = counts.iter().map(|&x| max_count / x).collect();
     let singleton_kmers = SingletonKmers {
         kmer_size: KMER_SIZE,
         fasta_files: fasta_files.clone(),
         kmers: singletons,
+        scaling_factors,
     };
     let output_file = "singleton_kmers.bc";
     let writer = BufWriter::new(File::create(output_file).unwrap());

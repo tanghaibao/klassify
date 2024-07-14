@@ -5,6 +5,7 @@ pub struct SingletonKmers {
     pub kmer_size: u8,
     pub fasta_files: Vec<String>,
     pub kmers: Vec<Vec<u64>>,
+    pub scaling_factors: Vec<f64>,
 }
 
 impl SingletonKmers {
