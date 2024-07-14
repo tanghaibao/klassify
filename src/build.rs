@@ -1,5 +1,6 @@
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
+use rayon::prelude::*;
 use std::collections::HashSet;
 
 const KMER_SIZE: u8 = 24;
@@ -12,9 +13,10 @@ pub struct BuildArgs {
 
 pub fn build(fasta_files: &Vec<String>) {
     let mut all_sets = Vec::new();
-    for fasta_file in fasta_files {
-        all_sets.push(get_kmers(fasta_file));
-    }
+    fasta_files
+        .par_iter()
+        .map(|fasta_file| get_kmers(fasta_file))
+        .collect_into_vec(&mut all_sets);
     for (fasta_file, kmer_set) in fasta_files.iter().zip(all_sets.iter()) {
         let mut unique_kmers = kmer_set.clone();
         for other_set in all_sets.iter() {
