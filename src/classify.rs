@@ -58,15 +58,8 @@ fn classify_one(
 ) {
     // Classify the reads
     let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
-    let file_prefix = Path::new(reads_file)
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .split('.')
-        .next()
-        .unwrap();
-    let output_file = file_prefix.to_string() + ".read_classifications.txt";
+    let file_prefix = Path::new(reads_file).file_name().unwrap().to_str().unwrap();
+    let output_file = file_prefix.to_string() + ".read_classifications.tsv";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     log::info!("Classifying reads");
     writeln!(
