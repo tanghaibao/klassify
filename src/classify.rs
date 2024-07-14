@@ -1,4 +1,4 @@
-use crate::info::load_kmer_db;
+use crate::info::{load_kmer_db, map_kmer_to_file};
 use crate::models::{ClassifyResults, SingletonKmers};
 
 use clap::Parser;
@@ -27,18 +27,6 @@ pub fn classify(bincode_file: &str, reads_files: &Vec<String>) {
     reads_files.par_iter().for_each(|reads_file| {
         classify_one(&singleton_kmers, &kmer_to_file, reads_file);
     });
-}
-
-fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize> {
-    // Convert to kmer => file index
-    let mut kmer_to_file = HashMap::new();
-    for (file_index, kmer_set) in singleton_kmers.kmers.iter().enumerate() {
-        for &kmer in kmer_set.iter() {
-            kmer_to_file.insert(kmer, file_index);
-        }
-    }
-    log::info!("Mapped kmers to files");
-    kmer_to_file
 }
 
 fn classify_one(

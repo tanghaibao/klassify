@@ -1,6 +1,7 @@
 use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
+use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
 use klassify::info;
@@ -20,6 +21,8 @@ enum SubCommand {
     Classify(classify::ClassifyArgs),
     #[clap(about = "Print details about the kmer table")]
     Info(info::InfoArgs),
+    #[clap(about = "Detect breakpoints")]
+    Breakpoint(breakpoint::BreakpointArgs),
 }
 
 fn main() {
@@ -43,6 +46,9 @@ fn main() {
         }
         SubCommand::Info(info) => {
             info::info(&info.bincode_file);
+        }
+        SubCommand::Breakpoint(breakpoint) => {
+            breakpoint::breakpoint(&breakpoint.bincode_file, &breakpoint.fasta_files);
         }
     }
 }
