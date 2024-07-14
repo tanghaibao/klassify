@@ -3,7 +3,11 @@ use bincode::deserialize_from;
 use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
-use std::{collections::HashMap, fs::File, io::BufReader};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, BufWriter, Write},
+};
 
 #[derive(Parser, Debug)]
 pub struct ClassifyArgs {
@@ -17,7 +21,11 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
     let reader = BufReader::new(File::open(bincode_file).unwrap());
     let singleton_kmers: SingletonKmers = deserialize_from(reader).unwrap();
     let kmer_size = singleton_kmers.kmer_size;
-    log::info!("Loaded singleton kmers (K={})", kmer_size);
+    log::info!(
+        "Loaded singleton kmers (K={}) from `{}`",
+        kmer_size,
+        bincode_file
+    );
 
     // Convert to kmer => file index
     let mut kmer_to_file = HashMap::new();
@@ -29,6 +37,20 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
     log::info!("Mapped kmers to files");
     // Classify the reads
     let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
+    let output_file = "read_classifications.txt";
+    let mut writer = BufWriter::new(File::create(output_file).unwrap());
+    log::info!("Classifying reads");
+    writeln!(
+        writer,
+        "ID\tLength\tKmers\tClassification\t{}",
+        singleton_kmers
+            .fasta_files
+            .iter()
+            .map(|count| count.to_string())
+            .collect::<Vec<_>>()
+            .join("\t")
+    )
+    .unwrap();
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
         let seq = record.normalize(false);
@@ -43,13 +65,34 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
             .zip(singleton_kmers.scaling_factors.iter())
             .map(|(count, scaling_factor)| ((*count as f64) * scaling_factor) as i32)
             .collect::<Vec<_>>();
+        // Get the first part of the ID
+        let id = String::from_utf8(record.id().to_vec())
+            .unwrap()
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .to_string();
         let results = ClassifyResults {
-            id: String::from_utf8(record.id().to_vec()).unwrap(),
+            id,
             seq_len: record.seq().len(),
             counts,
             scaled_counts,
         };
         let tag = results.tag(&singleton_kmers.fasta_files);
-        println!("{}\n{}", results, tag);
+        let to_write = format!(
+            "{}\t{}\t{}\t{}\t{}",
+            results.id,
+            results.seq_len,
+            results.counts.iter().sum::<i32>(),
+            tag,
+            results
+                .scaled_counts
+                .iter()
+                .map(|count| count.to_string())
+                .collect::<Vec<_>>()
+                .join("\t")
+        );
+        writeln!(writer, "{}", to_write).unwrap();
     }
+    log::info!("Read classifications written to `{}`", output_file);
 }

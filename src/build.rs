@@ -68,7 +68,7 @@ pub fn build(fasta_files: &Vec<String>) {
     let output_file = "singleton_kmers.bc";
     let writer = BufWriter::new(File::create(output_file).unwrap());
     serialize_into(writer, &singleton_kmers).expect("serialization to succeed");
-    log::info!("Singleton kmers written to {}", output_file);
+    log::info!("Singleton kmers written to `{}`", output_file);
 }
 
 fn get_kmers(fasta_file: &str) -> HashSet<u64> {
