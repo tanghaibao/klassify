@@ -49,6 +49,7 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
             counts,
             scaled_counts,
         };
-        println!("{}", results);
+        let tag = results.tag(&singleton_kmers.fasta_files);
+        println!("{}\n{}", results, tag);
     }
 }
