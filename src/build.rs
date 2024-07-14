@@ -3,7 +3,11 @@ use bincode::serialize_into;
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::BufWriter,
+};
 
 const KMER_SIZE: u8 = 24;
 
@@ -49,18 +53,22 @@ pub fn build(fasta_files: &Vec<String>) {
         })
         .collect::<Vec<_>>();
     // Serialize the singleton kmers to a file
+    let counts = singletons
+        .iter()
+        .map(|x| x.len() as f64)
+        .collect::<Vec<_>>();
+    let max_count = counts.iter().cloned().fold(0. / 0., f64::max);
+    let scaling_factors = counts.iter().map(|&x| max_count / x).collect();
     let singleton_kmers = SingletonKmers {
         kmer_size: KMER_SIZE,
         fasta_files: fasta_files.clone(),
         kmers: singletons,
+        scaling_factors,
     };
     let output_file = "singleton_kmers.bc";
-    serialize_into(
-        std::fs::File::create(output_file).unwrap(),
-        &singleton_kmers,
-    )
-    .expect("serialization to succeed");
-    log::info!("Singleton kmers written to {}", output_file);
+    let writer = BufWriter::new(File::create(output_file).unwrap());
+    serialize_into(writer, &singleton_kmers).expect("serialization to succeed");
+    log::info!("Singleton kmers written to `{}`", output_file);
 }
 
 fn get_kmers(fasta_file: &str) -> HashSet<u64> {
