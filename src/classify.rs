@@ -1,5 +1,5 @@
 use crate::info::{load_kmer_db, map_kmer_to_file};
-use crate::models::{ClassifyResults, SingletonKmers};
+use crate::models::{prefix, ClassifyResults, SingletonKmers};
 
 use clap::Parser;
 use log;
@@ -9,7 +9,6 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{BufWriter, Write},
-    path::Path,
 };
 
 #[derive(Parser, Debug)]
@@ -36,8 +35,8 @@ fn classify_one(
 ) {
     // Classify the reads
     let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
-    let file_prefix = Path::new(reads_file).file_name().unwrap().to_str().unwrap();
-    let output_file = file_prefix.to_string() + ".read_classifications.tsv";
+    let file_prefix = prefix(reads_file);
+    let output_file = file_prefix + ".read_classifications.tsv";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     log::info!("Classifying reads");
     writeln!(

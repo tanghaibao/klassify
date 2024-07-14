@@ -1,5 +1,5 @@
 use crate::info::{load_kmer_db, map_kmer_to_file};
-use crate::models::SingletonKmers;
+use crate::models::{prefix, prefix_until_dot, SingletonKmers};
 
 use clap::Parser;
 use log;
@@ -9,7 +9,6 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{BufWriter, Write},
-    path::Path,
 };
 
 #[derive(Parser, Debug)]
@@ -35,7 +34,7 @@ fn breakpoint_one(
 ) {
     // Classify the reads
     let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA file");
-    let file_prefix: &str = Path::new(fasta_file).file_name().unwrap().to_str().unwrap();
+    let file_prefix = prefix(fasta_file);
     let output_file = file_prefix.to_string() + ".classifications.bed";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     log::info!("Parsing reference");
@@ -59,7 +58,7 @@ fn breakpoint_one(
                     id,
                     pos,
                     pos + kmer_size as usize,
-                    singleton_kmers.fasta_files[file_index],
+                    prefix_until_dot(&singleton_kmers.fasta_files[file_index]),
                     kmer.0
                 );
                 writeln!(writer, "{}", to_write).unwrap();
