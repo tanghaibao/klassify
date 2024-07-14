@@ -2,7 +2,7 @@ use crate::models::SingletonKmers;
 use bincode::deserialize_from;
 use clap::Parser;
 use log;
-use std::fs::File;
+use std::{fs::File, io::BufReader};
 
 #[derive(Parser, Debug)]
 pub struct ClassifyArgs {
@@ -13,6 +13,7 @@ pub struct ClassifyArgs {
 }
 
 pub fn classify(bincode_file: &str, reads_file: &str) {
-    let _: SingletonKmers = deserialize_from(File::open(bincode_file).unwrap()).unwrap();
+    let reader = BufReader::new(File::open(bincode_file).unwrap());
+    let _: SingletonKmers = deserialize_from(reader).unwrap();
     log::info!("Loaded singleton kmers");
 }

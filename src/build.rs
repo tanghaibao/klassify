@@ -3,7 +3,11 @@ use bincode::serialize_into;
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fs::File,
+    io::BufWriter,
+};
 
 const KMER_SIZE: u8 = 24;
 
@@ -55,11 +59,8 @@ pub fn build(fasta_files: &Vec<String>) {
         kmers: singletons,
     };
     let output_file = "singleton_kmers.bc";
-    serialize_into(
-        std::fs::File::create(output_file).unwrap(),
-        &singleton_kmers,
-    )
-    .expect("serialization to succeed");
+    let writer = BufWriter::new(File::create(output_file).unwrap());
+    serialize_into(writer, &singleton_kmers).expect("serialization to succeed");
     log::info!("Singleton kmers written to {}", output_file);
 }
 
