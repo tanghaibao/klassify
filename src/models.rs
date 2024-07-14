@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
 pub struct SingletonKmers {
@@ -58,4 +59,19 @@ impl ClassifyResults {
             )
         }
     }
+}
+
+/// Get basename
+pub fn prefix(file_path: &str) -> String {
+    Path::new(file_path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
+}
+
+/// Get basename and up to the first dot in path
+pub fn prefix_until_dot(file_path: &str) -> String {
+    prefix(file_path).split('.').next().unwrap().to_string()
 }

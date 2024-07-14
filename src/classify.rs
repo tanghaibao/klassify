@@ -1,5 +1,6 @@
-use crate::models::{ClassifyResults, SingletonKmers};
-use bincode::deserialize_from;
+use crate::info::{load_kmer_db, map_kmer_to_file};
+use crate::models::{prefix, ClassifyResults, SingletonKmers};
+
 use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
@@ -7,8 +8,7 @@ use rayon::prelude::*;
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufReader, BufWriter, Write},
-    path::Path,
+    io::{BufWriter, Write},
 };
 
 #[derive(Parser, Debug)]
@@ -28,29 +28,6 @@ pub fn classify(bincode_file: &str, reads_files: &Vec<String>) {
     });
 }
 
-fn load_kmer_db(bincode_file: &str) -> SingletonKmers {
-    let reader = BufReader::new(File::open(bincode_file).unwrap());
-    let singleton_kmers: SingletonKmers = deserialize_from(reader).unwrap();
-    log::info!(
-        "Loaded singleton kmers (K={}) from `{}`",
-        singleton_kmers.kmer_size,
-        bincode_file
-    );
-    singleton_kmers
-}
-
-fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize> {
-    // Convert to kmer => file index
-    let mut kmer_to_file = HashMap::new();
-    for (file_index, kmer_set) in singleton_kmers.kmers.iter().enumerate() {
-        for &kmer in kmer_set.iter() {
-            kmer_to_file.insert(kmer, file_index);
-        }
-    }
-    log::info!("Mapped kmers to files");
-    kmer_to_file
-}
-
 fn classify_one(
     singleton_kmers: &SingletonKmers,
     kmer_to_file: &HashMap<u64, usize>,
@@ -58,8 +35,8 @@ fn classify_one(
 ) {
     // Classify the reads
     let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
-    let file_prefix = Path::new(reads_file).file_name().unwrap().to_str().unwrap();
-    let output_file = file_prefix.to_string() + ".read_classifications.tsv";
+    let file_prefix = prefix(reads_file);
+    let output_file = file_prefix + ".read_classifications.tsv";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     log::info!("Classifying reads");
     writeln!(
