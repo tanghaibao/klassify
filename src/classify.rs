@@ -33,12 +33,10 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
         let record = record.expect("valid record");
         let seq = record.normalize(false);
         let mut counts = vec![0; singleton_kmers.n()];
-        let mut kmer_counts = 0;
         for (_, kmer, _) in seq.bit_kmers(kmer_size, true) {
             if let Some(file_index) = kmer_to_file.get(&kmer.0) {
                 counts[*file_index] += 1;
             }
-            kmer_counts += 1;
         }
         let scaled_counts = counts
             .iter()
@@ -51,23 +49,6 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
             counts,
             scaled_counts,
         };
-        println!(
-            "{} ({}; {} kmers) =>\n {}\n {}",
-            String::from_utf8(record.id().to_vec()).unwrap(),
-            record.seq().len(),
-            kmer_counts,
-            results
-                .counts
-                .iter()
-                .map(|count| count.to_string())
-                .collect::<Vec<_>>()
-                .join("\t"),
-            results
-                .scaled_counts
-                .iter()
-                .map(|count| count.to_string())
-                .collect::<Vec<_>>()
-                .join("\t")
-        );
+        println!("{}", results);
     }
 }

@@ -20,3 +20,25 @@ pub struct ClassifyResults {
     pub counts: Vec<i32>,
     pub scaled_counts: Vec<i32>,
 }
+
+impl std::fmt::Display for ClassifyResults {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{} ({}; {} kmers) =>\n {}\n {}",
+            self.id,
+            self.seq_len,
+            self.counts.iter().sum::<i32>(),
+            self.counts
+                .iter()
+                .map(|count| count.to_string())
+                .collect::<Vec<_>>()
+                .join("\t"),
+            self.scaled_counts
+                .iter()
+                .map(|count| count.to_string())
+                .collect::<Vec<_>>()
+                .join("\t")
+        )
+    }
+}
