@@ -18,7 +18,6 @@ pub struct ClassifyResults {
     pub id: String,
     pub seq_len: usize,
     pub counts: Vec<i32>,
-    pub scaled_counts: Vec<i32>,
 }
 
 impl ClassifyResults {
@@ -28,7 +27,7 @@ impl ClassifyResults {
         let mut second_best_count = 0;
         let mut second_best_index = 0;
         let mut total = 0;
-        for (i, &count) in self.scaled_counts.iter().enumerate() {
+        for (i, &count) in self.counts.iter().enumerate() {
             total += count;
             if count > best_count {
                 second_best_count = best_count;
@@ -41,7 +40,9 @@ impl ClassifyResults {
             }
         }
         let half = total / 2;
-        if best_count + second_best_count > half {
+        if total == 0 {
+            "Unclassified:0,0".to_string()
+        } else if best_count + second_best_count > half {
             format!(
                 "{},{}:{},{}",
                 fasta_files[best_index],
