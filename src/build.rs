@@ -12,11 +12,10 @@ pub struct BuildArgs {
 }
 
 pub fn build(fasta_files: &Vec<String>) {
-    let mut all_sets = Vec::new();
-    fasta_files
+    let all_sets = fasta_files
         .par_iter()
         .map(|fasta_file| get_kmers(fasta_file))
-        .collect_into_vec(&mut all_sets);
+        .collect::<Vec<_>>();
     // Identify all the kmers that appear once and only once in all the files
     let mut kmer_counts = HashMap::new();
     for kmer_set in all_sets.iter() {
@@ -32,13 +31,12 @@ pub fn build(fasta_files: &Vec<String>) {
         .collect::<HashSet<_>>();
     log::info!("Singleton kmers: {}", singleton_kmers.len());
     // Find the unique kmers in each file
-    let mut singleton_sets = Vec::new();
-    (fasta_files, all_sets)
+    let _ = (fasta_files, all_sets)
         .into_par_iter()
         .map(|(fasta_file, kmer_set)| {
             let singleton_kmers_per_file = kmer_set
                 .intersection(&singleton_kmers)
-                .map(|&kmer| kmer)
+                .cloned()
                 .collect::<HashSet<_>>();
             log::info!(
                 "{}: {} singleton kmers found",
@@ -47,7 +45,7 @@ pub fn build(fasta_files: &Vec<String>) {
             );
             singleton_kmers_per_file
         })
-        .collect_into_vec(&mut singleton_sets);
+        .collect::<Vec<_>>();
 }
 
 fn get_kmers(fasta_file: &str) -> HashSet<u64> {
