@@ -66,5 +66,5 @@ fn breakpoint_one(
             }
         }
     }
-    log::info!("Read classifications written to `{}`", output_file);
+    log::info!("Classifications written to `{}`", output_file);
 }
