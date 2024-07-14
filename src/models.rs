@@ -6,3 +6,9 @@ pub struct SingletonKmers {
     pub fasta_files: Vec<String>,
     pub kmers: Vec<Vec<u64>>,
 }
+
+impl SingletonKmers {
+    pub fn n(&self) -> usize {
+        self.fasta_files.len()
+    }
+}

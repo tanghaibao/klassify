@@ -2,7 +2,8 @@ use crate::models::SingletonKmers;
 use bincode::deserialize_from;
 use clap::Parser;
 use log;
-use std::{fs::File, io::BufReader};
+use needletail::{parse_fastx_file, Sequence};
+use std::{collections::HashMap, fs::File, io::BufReader};
 
 #[derive(Parser, Debug)]
 pub struct ClassifyArgs {
@@ -14,6 +15,37 @@ pub struct ClassifyArgs {
 
 pub fn classify(bincode_file: &str, reads_file: &str) {
     let reader = BufReader::new(File::open(bincode_file).unwrap());
-    let _: SingletonKmers = deserialize_from(reader).unwrap();
-    log::info!("Loaded singleton kmers");
+    let singleton_kmers: SingletonKmers = deserialize_from(reader).unwrap();
+    let kmer_size = singleton_kmers.kmer_size;
+    log::info!("Loaded singleton kmers (K={})", kmer_size);
+
+    // Convert to kmer => file index
+    let mut kmer_to_file = HashMap::new();
+    for (file_index, kmer_set) in singleton_kmers.kmers.iter().enumerate() {
+        for &kmer in kmer_set.iter() {
+            kmer_to_file.insert(kmer, file_index);
+        }
+    }
+    log::info!("Mapped kmers to files");
+    // Classify the reads
+    let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
+    while let Some(record) = reader.next() {
+        let record = record.expect("valid record");
+        let seq = record.normalize(false);
+        let mut counts = vec![0; singleton_kmers.n()];
+        for (_, kmer, _) in seq.bit_kmers(kmer_size, true) {
+            if let Some(file_index) = kmer_to_file.get(&kmer.0) {
+                counts[*file_index] += 1;
+            }
+        }
+        println!(
+            "{} => {}",
+            String::from_utf8(record.id().to_vec()).unwrap(),
+            counts
+                .iter()
+                .map(|count| count.to_string())
+                .collect::<Vec<_>>()
+                .join("\t")
+        );
+    }
 }
