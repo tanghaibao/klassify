@@ -2,6 +2,7 @@ use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
 use klassify::build;
+use klassify::classify;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
@@ -14,6 +15,8 @@ struct Args {
 enum SubCommand {
     #[clap(about = "Build reference kmer table")]
     Build(build::BuildArgs),
+    #[clap(about = "Classify reads")]
+    Classify(classify::ClassifyArgs),
 }
 
 fn main() {
@@ -31,6 +34,9 @@ fn main() {
     match args.subcommand {
         SubCommand::Build(build) => {
             build::build(&build.fasta_files);
+        }
+        SubCommand::Classify(classify) => {
+            classify::classify(&classify.bincode_file, &classify.reads_file);
         }
     }
 }
