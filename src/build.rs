@@ -1,7 +1,7 @@
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const KMER_SIZE: u8 = 24;
 
@@ -17,15 +17,30 @@ pub fn build(fasta_files: &Vec<String>) {
         .par_iter()
         .map(|fasta_file| get_kmers(fasta_file))
         .collect_into_vec(&mut all_sets);
-    for (fasta_file, kmer_set) in fasta_files.iter().zip(all_sets.iter()) {
-        let mut unique_kmers = kmer_set.clone();
-        for other_set in all_sets.iter() {
-            if other_set as *const _ == kmer_set as *const _ {
-                continue;
-            }
-            unique_kmers = unique_kmers.difference(other_set).cloned().collect();
+    // Identify all the kmers that appear once and only once in all the files
+    let mut kmer_counts = HashMap::new();
+    for kmer_set in all_sets.iter() {
+        for kmer in kmer_set.iter() {
+            *kmer_counts.entry(*kmer).or_insert(0) += 1;
         }
-        log::info!("{}: {} unique kmers found", fasta_file, unique_kmers.len());
+    }
+    log::info!("Total unique kmers: {}", kmer_counts.len());
+    let singleton_kmers = kmer_counts
+        .into_iter()
+        .filter(|(_, count)| *count == 1)
+        .map(|(kmer, _)| kmer)
+        .collect::<HashSet<_>>();
+    log::info!("Singleton kmers: {}", singleton_kmers.len());
+    // Find the unique kmers in each file
+    for (fasta_file, kmer_set) in fasta_files.iter().zip(all_sets.iter()) {
+        let singleton_kmers_per_file = kmer_set
+            .intersection(&singleton_kmers)
+            .collect::<HashSet<_>>();
+        log::info!(
+            "{}: {} singleton kmers found",
+            fasta_file,
+            singleton_kmers_per_file.len()
+        );
     }
 }
 
