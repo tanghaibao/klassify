@@ -13,3 +13,10 @@ impl SingletonKmers {
         self.fasta_files.len()
     }
 }
+
+pub struct ClassifyResults {
+    pub id: String,
+    pub seq_len: usize,
+    pub counts: Vec<i32>,
+    pub scaled_counts: Vec<i32>,
+}

@@ -1,4 +1,4 @@
-use crate::models::SingletonKmers;
+use crate::models::{ClassifyResults, SingletonKmers};
 use bincode::deserialize_from;
 use clap::Parser;
 use log;
@@ -45,17 +45,25 @@ pub fn classify(bincode_file: &str, reads_file: &str) {
             .zip(singleton_kmers.scaling_factors.iter())
             .map(|(count, scaling_factor)| ((*count as f64) * scaling_factor) as i32)
             .collect::<Vec<_>>();
+        let results = ClassifyResults {
+            id: String::from_utf8(record.id().to_vec()).unwrap(),
+            seq_len: record.seq().len(),
+            counts,
+            scaled_counts,
+        };
         println!(
             "{} ({}; {} kmers) =>\n {}\n {}",
             String::from_utf8(record.id().to_vec()).unwrap(),
             record.seq().len(),
             kmer_counts,
-            counts
+            results
+                .counts
                 .iter()
                 .map(|count| count.to_string())
                 .collect::<Vec<_>>()
                 .join("\t"),
-            scaled_counts
+            results
+                .scaled_counts
                 .iter()
                 .map(|count| count.to_string())
                 .collect::<Vec<_>>()
