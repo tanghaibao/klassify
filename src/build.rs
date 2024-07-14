@@ -1,3 +1,5 @@
+use crate::models::SingletonKmers;
+use bincode::serialize_into;
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
@@ -31,13 +33,13 @@ pub fn build(fasta_files: &Vec<String>) {
         .collect::<HashSet<_>>();
     log::info!("Singleton kmers: {}", singleton_kmers.len());
     // Find the unique kmers in each file
-    let _ = (fasta_files, all_sets)
+    let singletons = (fasta_files, all_sets)
         .into_par_iter()
         .map(|(fasta_file, kmer_set)| {
             let singleton_kmers_per_file = kmer_set
                 .intersection(&singleton_kmers)
                 .cloned()
-                .collect::<HashSet<_>>();
+                .collect::<Vec<_>>();
             log::info!(
                 "{}: {} singleton kmers found",
                 fasta_file,
@@ -46,6 +48,19 @@ pub fn build(fasta_files: &Vec<String>) {
             singleton_kmers_per_file
         })
         .collect::<Vec<_>>();
+    // Serialize the singleton kmers to a file
+    let singleton_kmers = SingletonKmers {
+        kmer_size: KMER_SIZE,
+        fasta_files: fasta_files.clone(),
+        kmers: singletons,
+    };
+    let output_file = "singleton_kmers.bc";
+    serialize_into(
+        std::fs::File::create(output_file).unwrap(),
+        &singleton_kmers,
+    )
+    .expect("serialization to succeed");
+    log::info!("Singleton kmers written to {}", output_file);
 }
 
 fn get_kmers(fasta_file: &str) -> HashSet<u64> {
@@ -56,12 +71,6 @@ fn get_kmers(fasta_file: &str) -> HashSet<u64> {
         let seq = record.normalize(false);
         for (_, kmer, _) in seq.bit_kmers(KMER_SIZE, true) {
             kmer_set.insert(kmer.0);
-            // let kmer_seq = bitmer_to_bytes(kmer);
-            // println!(
-            //     "{} {:?}",
-            //     String::from_utf8(kmer_seq).expect("valid UTF-8"),
-            //     kmer.0,
-            // );
         }
     }
     log::info!("{}: {} kmers found", fasta_file, kmer_set.len());
