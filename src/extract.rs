@@ -2,6 +2,7 @@ use crate::models::prefix;
 
 use clap::Parser;
 use csv::ReaderBuilder;
+use log;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -40,6 +41,7 @@ fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) {
     let file_prefix = prefix(fasta_file);
     let output_file = file_prefix.to_string() + ".extracted.fasta";
     let mut writer = std::fs::File::create(&output_file).unwrap();
+    let mut total = 0;
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
         let seq = record.normalize(false);
@@ -49,16 +51,18 @@ fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) {
             .next()
             .unwrap()
             .to_string();
-        if let Some(label) = read_map.get(&id) {
+        if let Some(new_read_id) = read_map.get(&id) {
             writeln!(
                 writer,
                 ">{}\n{}",
-                label,
+                new_read_id,
                 String::from_utf8(seq.to_vec()).unwrap()
             )
             .unwrap();
+            total += 1;
         }
     }
+    log::info!("Extracted {} reads from `{}`", total, fasta_file);
 }
 
 pub fn extract(reads_tsv: &str, fasta_files: &Vec<String>) {
