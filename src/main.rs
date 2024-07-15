@@ -4,6 +4,7 @@ use libc::{SIGPIPE, SIG_DFL};
 use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
+use klassify::extract;
 use klassify::info;
 
 #[derive(Parser, Debug)]
@@ -23,6 +24,8 @@ enum SubCommand {
     Info(info::InfoArgs),
     #[clap(about = "Detect breakpoints")]
     Breakpoint(breakpoint::BreakpointArgs),
+    #[clap(about = "Extract reads")]
+    Extract(extract::ExtractArgs),
 }
 
 fn main() {
@@ -49,6 +52,9 @@ fn main() {
         }
         SubCommand::Breakpoint(breakpoint) => {
             breakpoint::breakpoint(&breakpoint.bincode_file, &breakpoint.fasta_files);
+        }
+        SubCommand::Extract(extract) => {
+            extract::extract(&extract.reads_tsv, &extract.fasta_files);
         }
     }
 }
