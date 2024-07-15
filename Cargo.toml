@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 bincode = "*"
 clap = { version = "*", features = ["derive"] }
+csv = "*"
 env_logger = "*"
 libc = "*"
 log = "*"
