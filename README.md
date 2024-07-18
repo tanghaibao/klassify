@@ -44,7 +44,7 @@ This generates a file called `singleton_kmers.bc` that indexes all the unique km
 mkdir f1_reads
 faSplit about f1_reads.fa 1000000000 f1_reads/
 klassify classify singleton_kmers.bc f1_reads/*.fa
-python classify_reads.py
+python scripts/classify_reads.py
 ```
 
 3. Map ‘chimeric’ progeny reads to the reference
@@ -62,7 +62,7 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_
 mkdir parent_reads
 faSplit about parent_reads.fa 1000000000 parent_reads/
 klassify classify singleton_kmers.bc parent_reads/*.fa
-python classify_reads.py
+python scripts/classify_reads.py
 klassify extract chimeric_parent_reads.tsv parent_reads/*.fa
 cat *.extracted.fa > chimeric_parent_reads.fa
 minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_parent_reads.fa \
@@ -76,4 +76,6 @@ samtools index chimeric_f1_reads.parents.bam
 samtools index chimeric_parent_reads.parents.bam
 mosdepth -t 8 -n --by 10000 chimeric_f1_reads.mosdeth chimeric_f1_reads.parents.bam
 mosdepth -t 8 -n --by 10000 chimeric_parent_reads.mosdeth chimeric_parent_reads.parents.bam
+python scripts/generate_regions.py \
+    chimeric_f1_reads.mosdeth.regions.bed.gz chimeric_parent_reads.mosdeth.regions.bed.gz
 ```
