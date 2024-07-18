@@ -1,4 +1,4 @@
-use crate::models::SingletonKmers;
+use crate::models::{prefix, SingletonKmers};
 use bincode::serialize_into;
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
@@ -20,6 +20,7 @@ pub struct BuildArgs {
     pub kmer_size: u8,
 }
 
+/// Convert FASTA files to singleton k-mers
 pub fn build(fasta_files: &Vec<String>, kmer_size: u8) {
     let all_sets = fasta_files
         .par_iter()
@@ -55,10 +56,11 @@ pub fn build(fasta_files: &Vec<String>, kmer_size: u8) {
             singleton_kmers_per_file
         })
         .collect::<Vec<_>>();
+    let fasta_files = fasta_files.iter().map(|x| prefix(x)).collect::<Vec<_>>();
     // Serialize the singleton kmers to a file
     let singleton_kmers = SingletonKmers {
         kmer_size,
-        fasta_files: fasta_files.clone(),
+        fasta_files,
         kmers: singletons,
     };
     let output_file = "singleton_kmers.bc";
@@ -67,6 +69,7 @@ pub fn build(fasta_files: &Vec<String>, kmer_size: u8) {
     log::info!("Singleton kmers written to `{}`", output_file);
 }
 
+/// Get kmers from a FASTA file
 fn get_kmers(fasta_file: &str, kmer_size: u8) -> HashSet<u64> {
     let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA file");
     let mut kmer_set = HashSet::new();
