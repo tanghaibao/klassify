@@ -5,6 +5,7 @@ use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
 use klassify::extract;
+use klassify::extract_bam;
 use klassify::info;
 
 #[derive(Parser, Debug)]
@@ -26,6 +27,8 @@ enum SubCommand {
     Breakpoint(breakpoint::BreakpointArgs),
     #[clap(about = "Extract reads")]
     Extract(extract::ExtractArgs),
+    #[clap(about = "Extract reads from BAM")]
+    ExtractBam(extract_bam::ExtractBamArgs),
 }
 
 fn main() {
@@ -55,6 +58,9 @@ fn main() {
         }
         SubCommand::Extract(extract) => {
             extract::extract(&extract.reads_tsv, &extract.fasta_files);
+        }
+        SubCommand::ExtractBam(extract_bam) => {
+            extract_bam::extract_bam(&extract_bam.regions_file, &extract_bam.bam_file);
         }
     }
 }
