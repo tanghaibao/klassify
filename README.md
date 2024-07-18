@@ -39,20 +39,27 @@ klassify classify singleton_kmers.bc f1_reads/*.fa
 3. Map ‘chimeric’ progeny reads to the reference
 
 ```console
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fasta \
-    | samtools sort -@ 8 -o chimeric_f1.parents.bam
+klassify extract chimeric_f1_reads.tsv f1_reads/*.fa
+cat *.extracted.fa > chimeric_f1_reads.fa
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_f1_reads.fa \
+    | samtools sort -@ 8 -o chimeric_f1_reads.parents.bam
 ```
 
 4. Repeat the steps using the parental reads
 
 ```console
 klassify classify singleton_kmers.bc parent_reads/*.fa
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fasta \
-    | samtools sort -@ 8 -o chimeric_parents.parents.bam
+klassify extract chimeric_parent_reads.tsv parent_reads/*.fa
+cat *.extracted.fa > chimeric_parent_reads.fa
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_parent_reads.fa \
+    | samtools sort -@ 8 -o chimeric_parent_reads.parents.bam
 ```
 
 5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent reads (so we are not affected by assembly errors)
 
 ```console
-klassify compare chimeric_f1.parents.bam chimeric_parents.parents.bam
+samtools index chimeric_f1_reads.parents.bam
+samtools index chimeric_parent_reads.parents.bam
+mosdepth -t 8 -n --by 10000 chimeric_f1_reads.mosdeth chimeric_f1_reads.parents.bam
+mosdepth -t 8 -n --by 10000 chimeric_parent_reads.mosdeth chimeric_parent_reads.parents.bam
 ```
