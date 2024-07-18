@@ -12,7 +12,7 @@ libc = "*"
 log = "*"
 needletail = "*"
 rayon = "*"
-rust-htslib = "*"
+rust-htslib = { version = "0.46" }
 serde = { version = "*", features = ["derive"] }
 
 [[bin]]
