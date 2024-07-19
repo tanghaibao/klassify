@@ -37,7 +37,9 @@ def main(args: List[str]):
         if "Chr" not in chrom:
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
-        chrom_selected = [(chrom, a, b, c) for (a, b, c) in regions[chrom] if c > 5]
+        chrom_selected = [
+            (chrom, a, b, round(c)) for (a, b, c) in regions[chrom] if 5 < c < 100
+        ]
         selected += chrom_selected
         d.append(
             (
@@ -61,15 +63,15 @@ def main(args: List[str]):
             continue
         prev = merged[-1]
         if prev[0] == cur[0] and prev[2] >= cur[1]:
-            merged[-1] = (prev[0], prev[1], max(prev[2], cur[2]), f"{prev[3]};{cur[3]}")
+            merged[-1] = (prev[0], prev[1], max(prev[2], cur[2]), f"{prev[3]},{cur[3]}")
         else:
             merged.append(cur)
 
     # Write the merged regions to a file
     regions_file = "regions"
     with open(regions_file, "w", encoding="utf-8") as fw:
-        for chrom, start, end, region in merged:
-            print(f"{chrom}\t{start}\t{end}\t{region}", file=fw)
+        for chrom, start, end, score in merged:
+            print(f"{chrom}\t{start}\t{end}\t{score}", file=fw)
     print(f"Merged regions written to `{regions_file}`")
 
 
