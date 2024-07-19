@@ -15,14 +15,15 @@ def load_bed(bed: str) -> pd.DataFrame:
 
 
 def main(args: List[str]):
-    abed, bed = args[:2]
-    hf = load_bed(abed)
-    of = load_bed(bed)
+    abed, p1_bed, p2_bed = args[:3]
+    af = load_bed(abed)
+    p1f = load_bed(p1_bed)
+    p2f = load_bed(p2_bed)
 
     # Find the regions that have high depth per chrom
     regions = defaultdict(list)
-    df = hf.copy()
-    df["depth"] = hf["depth"] / (of["depth"] + 1)
+    df = af.copy()
+    df["depth"] = af["depth"] / (p1f["depth"] + p2f["depth"] + 1)
     for _, row in df.iterrows():
         chrom = row["chrom"]
         start = row["start"]
@@ -32,7 +33,7 @@ def main(args: List[str]):
 
     d = []
     for chrom, data in regions.items():
-        if "utg" in chrom:
+        if "Chr" not in chrom:
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
         d.append(
