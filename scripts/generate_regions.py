@@ -40,7 +40,9 @@ def main(args: List[str]):
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
         chrom_selected = [
-            (chrom, a, b, str(round(c))) for (a, b, c) in regions[chrom] if 5 < c < 100
+            (chrom, a, b, str(round(c)))
+            for (a, b, c) in regions[chrom]
+            if 5 <= c <= 100
         ]
         selected += chrom_selected
         d.append(
