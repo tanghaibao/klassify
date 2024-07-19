@@ -32,22 +32,50 @@ def main(args: List[str]):
         regions[chrom].append((start, end, depth))
 
     d = []
+    selected = []
     for chrom, data in regions.items():
         if "Chr" not in chrom:
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
+        chrom_selected = [(chrom, a, b, c) for (a, b, c) in regions[chrom] if c > 5]
+        selected += chrom_selected
         d.append(
             (
                 chrom,
-                ",".join(
-                    f"{chrom}:{a}-{b}:{c}" for (a, b, c) in regions[chrom] if c > 5
-                ),
+                ",".join(f"{chrom}:{a}-{b}:{c}" for (chrom, a, b, c) in chrom_selected),
             )
         )
 
     kf = pd.DataFrame(d)
     kf.columns = ["Chrom", "Regions"]
-    kf.to_csv("poi.tsv", sep="\t", index=False)
+    poi_tsv = "poi.tsv"
+    kf.to_csv(poi_tsv, sep="\t", index=False)
+    print(f"Points of interests written to `{poi_tsv}`")
+
+    # Merge regions that are close to each other
+    selected.sort()
+    merged = []
+    for i, cur in enumerate(selected):
+        if i == 0:
+            merged.append(cur)
+            continue
+        prev = merged[-1]
+        if prev[0] == cur[0] and prev[2] >= cur[1]:
+            merged[-1] = (
+                prev[0],
+                prev[1],
+                max(prev[2], cur[2]),
+                prev[3] + ";" + cur[3],
+            )
+        else:
+            merged.append(cur)
+
+    # Write the merged regions to a file
+    regions_file = "regions"
+    with open(regions_file, "w", encoding="utf-8") as fw:
+        for chrom, start, end, region in merged:
+            print(f"{chrom}\t{start}\t{end}\t{region}", file=fw)
+    print(f"Merged regions written to `{regions_file}`")
 
 
 if __name__ == "__main__":
