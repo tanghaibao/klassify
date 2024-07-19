@@ -15,8 +15,7 @@ def get_pairs() -> Set[Tuple[str, str]]:
     return pairs
 
 
-def get_reads(args) -> pd.DataFrame:
-    rc, pairs = args
+def get_reads(rc: str) -> pd.DataFrame:
     rf = pd.read_csv(rc, sep="\t")
     filtered = []
     for _, row in rf.iterrows():
@@ -27,24 +26,23 @@ def get_reads(args) -> pd.DataFrame:
             continue
         ab, scores = classification.split(":", 1)
         a, b = ab.replace(".fa", "").split(",")
+        if a[:7] != b[:7]:
+            continue
         a, b = tuple(sorted((a, b)))
         ascore, bscore = scores.split(",", 1)
         ascore, bscore = int(ascore), int(bscore)
-        if kmers >= 100 and length > 1000 and ascore + bscore >= 50 and bscore >= 10 and (a, b) in pairs:
+        if kmers > 100 and length > 1000 and ascore + bscore > 50 and bscore > 10:
             row["Label"] = f"{a}_{b}"
             filtered.append(row)
     return pd.DataFrame(filtered)
 
 
 def main():
-    pairs = get_pairs()
-    print(pairs)
-    rcs = glob("LAp_hifi_classify/*.read_classifications.tsv")
-    args = [(rc, pairs) for rc in rcs]
+    rcs = glob("9208-classify/*.read_classifications.tsv")
     pool = Pool(100)
-    dfs = pool.map(get_reads, args)
+    dfs = pool.map(get_reads, rcs)
     df = pd.concat(dfs)
-    df.to_csv("filtered_LAP_HIFI.tsv", sep="\t", index=False)
+    df.to_csv("9208-classify.filtered.tsv", sep="\t", index=False)
 
 
 if __name__ == "__main__":
