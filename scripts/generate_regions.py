@@ -62,7 +62,7 @@ def main(args: List[str]):
             merged.append(cur)
             continue
         prev = merged[-1]
-        if prev[0] == cur[0] and prev[2] >= cur[1]:
+        if prev[0] == cur[0] and prev[2] + 10000 >= cur[1]:
             merged[-1] = (prev[0], prev[1], max(prev[2], cur[2]), f"{prev[3]},{cur[3]}")
         else:
             merged.append(cur)
@@ -71,7 +71,7 @@ def main(args: List[str]):
     regions_file = "regions"
     with open(regions_file, "w", encoding="utf-8") as fw:
         for chrom, start, end, score in merged:
-            print(f"{chrom}\t{start}\t{end}\t{score}", file=fw)
+            print(f"{chrom}:{start}-{end}\t{score}", file=fw)
     print(f"Merged regions written to `{regions_file}`")
 
 
