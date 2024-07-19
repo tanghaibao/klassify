@@ -74,7 +74,7 @@ def main(args: List[str]):
 
     # Write the merged regions to a file
     regions_file = f"{prefix}.regions.tsv"
-    counter = Counter()
+    counter: Counter[str] = Counter()
     with open(regions_file, "w", encoding="utf-8") as fw:
         for chrom, start, end, score in merged:
             print(f"{chrom}:{start}-{end}\t{score}", file=fw)
