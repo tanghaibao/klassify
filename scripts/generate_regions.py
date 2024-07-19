@@ -68,21 +68,10 @@ def main(args: List[str]):
         else:
             merged.append(cur)
 
-    # Limit 2 regions per chromosome
-    limited = []
-    for chrom, groups in groupby(merged, key=lambda x: x[0]):
-        groups = sorted(
-            groups,
-            key=lambda x: sum(int(_) for _ in x[3].split(",")),
-            reverse=True,
-        )
-        limited += groups[:2]
-    limited.sort()
-
     # Write the merged regions to a file
     regions_file = "regions"
     with open(regions_file, "w", encoding="utf-8") as fw:
-        for chrom, start, end, score in limited:
+        for chrom, start, end, score in merged:
             print(f"{chrom}:{start}-{end}\t{score}", file=fw)
     print(f"Merged regions written to `{regions_file}`")
 
