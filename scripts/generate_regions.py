@@ -61,12 +61,7 @@ def main(args: List[str]):
             continue
         prev = merged[-1]
         if prev[0] == cur[0] and prev[2] >= cur[1]:
-            merged[-1] = (
-                prev[0],
-                prev[1],
-                max(prev[2], cur[2]),
-                prev[3] + ";" + cur[3],
-            )
+            merged[-1] = (prev[0], prev[1], max(prev[2], cur[2]), f"{prev[3]};{cur[3]}")
         else:
             merged.append(cur)
 
