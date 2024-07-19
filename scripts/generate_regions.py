@@ -1,5 +1,6 @@
+import os.path as op
+
 from collections import defaultdict
-from itertools import groupby
 from typing import List
 
 import pandas as pd
@@ -51,7 +52,8 @@ def main(args: List[str]):
 
     kf = pd.DataFrame(d)
     kf.columns = ["Chrom", "Regions"]
-    poi_tsv = "poi.tsv"
+    prefix = op.basename(abed).split(".")[0]
+    poi_tsv = f"{prefix}.poi.tsv"
     kf.to_csv(poi_tsv, sep="\t", index=False)
     print(f"Points of interests written to `{poi_tsv}`")
 
@@ -69,7 +71,7 @@ def main(args: List[str]):
             merged.append(cur)
 
     # Write the merged regions to a file
-    regions_file = "regions"
+    regions_file = f"{prefix}.regions.tsv"
     with open(regions_file, "w", encoding="utf-8") as fw:
         for chrom, start, end, score in merged:
             print(f"{chrom}:{start}-{end}\t{score}", file=fw)
