@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import groupby
 from typing import List
 
 import pandas as pd
@@ -38,7 +39,7 @@ def main(args: List[str]):
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
         chrom_selected = [
-            (chrom, a, b, round(c)) for (a, b, c) in regions[chrom] if 5 < c < 100
+            (chrom, a, b, str(round(c))) for (a, b, c) in regions[chrom] if 5 < c < 100
         ]
         selected += chrom_selected
         d.append(
@@ -67,10 +68,21 @@ def main(args: List[str]):
         else:
             merged.append(cur)
 
+    # Limit 2 regions per chromosome
+    limited = []
+    for chrom, groups in groupby(merged, key=lambda x: x[0]):
+        groups = sorted(
+            groups,
+            key=lambda x: sum(int(_) for _ in x[3].split(",")),
+            reverse=True,
+        )
+        limited += groups[:2]
+    limited.sort()
+
     # Write the merged regions to a file
     regions_file = "regions"
     with open(regions_file, "w", encoding="utf-8") as fw:
-        for chrom, start, end, score in merged:
+        for chrom, start, end, score in limited:
             print(f"{chrom}:{start}-{end}\t{score}", file=fw)
     print(f"Merged regions written to `{regions_file}`")
 
