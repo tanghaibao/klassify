@@ -31,7 +31,7 @@ def get_reads(rc: str) -> pd.DataFrame:
         a, b = tuple(sorted((a, b)))
         ascore, bscore = scores.split(",", 1)
         ascore, bscore = int(ascore), int(bscore)
-        if kmers > 100 and length > 1000 and ascore + bscore > 50 and bscore > 10:
+        if kmers >= 300 and ascore + bscore >= 50 and bscore >= 10:
             row["Label"] = f"{a}_{b}"
             filtered.append(row)
     return pd.DataFrame(filtered)
