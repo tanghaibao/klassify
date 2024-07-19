@@ -1,4 +1,6 @@
-from collections import defaultdict
+import os.path as op
+
+from collections import Counter, defaultdict
 from typing import List
 
 import pandas as pd
@@ -32,22 +34,51 @@ def main(args: List[str]):
         regions[chrom].append((start, end, depth))
 
     d = []
+    selected = []
     for chrom, data in regions.items():
         if "Chr" not in chrom:
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
+        chrom_selected = [
+            (chrom, a, b, str(round(c))) for (a, b, c) in regions[chrom] if 5 < c < 100
+        ]
+        selected += chrom_selected
         d.append(
             (
                 chrom,
-                ",".join(
-                    f"{chrom}:{a}-{b}:{c}" for (a, b, c) in regions[chrom] if c > 5
-                ),
+                ",".join(f"{chrom}:{a}-{b}:{c}" for (chrom, a, b, c) in chrom_selected),
             )
         )
 
     kf = pd.DataFrame(d)
     kf.columns = ["Chrom", "Regions"]
-    kf.to_csv("poi.tsv", sep="\t", index=False)
+    prefix = op.basename(abed).split(".")[0]
+    poi_tsv = f"{prefix}.poi.tsv"
+    kf.to_csv(poi_tsv, sep="\t", index=False)
+    print(f"Points of interests written to `{poi_tsv}`")
+
+    # Merge regions that are close to each other
+    selected.sort()
+    merged = []
+    for i, cur in enumerate(selected):
+        if i == 0:
+            merged.append(cur)
+            continue
+        prev = merged[-1]
+        if prev[0] == cur[0] and prev[2] + 20000 >= cur[1]:
+            merged[-1] = (prev[0], prev[1], max(prev[2], cur[2]), f"{prev[3]},{cur[3]}")
+        else:
+            merged.append(cur)
+
+    # Write the merged regions to a file
+    regions_file = f"{prefix}.regions.tsv"
+    counter = Counter()
+    with open(regions_file, "w", encoding="utf-8") as fw:
+        for chrom, start, end, score in merged:
+            print(f"{chrom}:{start}-{end}\t{score}", file=fw)
+            counter[chrom[:2]] += 1
+    print(f"Merged regions written to `{regions_file}`")
+    print("Region counts:", counter)
 
 
 if __name__ == "__main__":
