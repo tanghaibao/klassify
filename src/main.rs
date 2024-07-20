@@ -61,7 +61,11 @@ fn main() {
             breakpoint::breakpoint(&breakpoint.bincode_file, &breakpoint.fasta_files);
         }
         SubCommand::Extract(extract) => {
-            extract::extract(&extract.reads_tsv, &extract.fasta_files);
+            extract::extract(
+                &extract.reads_tsv,
+                &extract.fasta_files,
+                &extract.output_file,
+            );
         }
         SubCommand::ExtractBam(extract_bam) => {
             extract_bam::extract_bam(&extract_bam.regions_file, &extract_bam.bam_file);
