@@ -39,12 +39,15 @@ def get_reads(rc: str) -> pd.DataFrame:
 
 
 def main(args: List[str]):
-    workdir = args[0]
+    workdir = args[0].rstrip()
     rcs = glob(f"{workdir}/*.read_classifications.tsv")
-    print(f"Found f{len(rcs)} read classifications")
+    print(f"Found {len(rcs)} read classifications")
     pool = Pool(100)
     dfs = pool.map(get_reads, rcs)
     df = pd.concat(dfs)
+    print(f"Found {len(df)} total reads")
+    if len(df) == 0:
+        return
     df.to_csv(f"{workdir}.filtered.tsv", sep="\t", index=False)
 
 
