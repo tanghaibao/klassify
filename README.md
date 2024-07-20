@@ -68,7 +68,7 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa f1_classi
 
 ```console
 mkdir parent_reads parent_classify
-faSplit about parent_reads.fa 1000000000 parent_reads/
+faSplit about parent_reads.fa 2000000000 parent_reads/
 klassify classify singleton_kmers.bc parent_reads/*.fa
 mv *.read_classfications.tsv parent_classify/
 python scripts/classify_reads.py parent_classify
