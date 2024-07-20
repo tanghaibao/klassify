@@ -41,41 +41,44 @@ This generates a file called `singleton_kmers.bc` that indexes all the unique km
 2. Classify the progeny (e.g. F1) reads based on the unique kmers
 
 ```console
-mkdir f1_reads
-faSplit about f1_reads.fa 1000000000 f1_reads/
+mkdir f1_reads/ f1_classify/
+faSplit about f1_reads.fa 2000000000 f1_reads/
 klassify classify singleton_kmers.bc f1_reads/*.fa
-python scripts/classify_reads.py
+mv *.read_classfications.tsv f1_classify/
+python scripts/classify_reads.py f1_classify/
 ```
 
-3. Map ‘chimeric’ progeny reads to the reference
+3. Map ‘chimeric’ progeny reads to the parents reference
 
 ```console
-klassify extract chimeric_f1_reads.tsv f1_reads/*.fa
-cat *.extracted.fa > chimeric_f1_reads.fa
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_f1_reads.fa \
-    | samtools sort -@ 8 -o chimeric_f1_reads.parents.bam
+klassify extract f1_reads.filtered.tsv f1_reads/*.fa
+cat *.extracted.fa > f1_reads.filtered.fa
+rm *.extracted.fa
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa f1_reads.filtered.fa \
+    --split-prefix /tmp/chimeric_f1_reads | samtools sort -@ 8 -o f1_reads.filtered.bam
 ```
 
 4. Repeat the steps using the parental reads
 
 ```console
-mkdir parent_reads
+mkdir parent_reads/ parent_classify/
 faSplit about parent_reads.fa 1000000000 parent_reads/
 klassify classify singleton_kmers.bc parent_reads/*.fa
-python scripts/classify_reads.py
-klassify extract chimeric_parent_reads.tsv parent_reads/*.fa
-cat *.extracted.fa > chimeric_parent_reads.fa
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa chimeric_parent_reads.fa \
-    | samtools sort -@ 8 -o chimeric_parent_reads.parents.bam
+mv *.read_classfications.tsv parent_reads/
+python scripts/classify_reads.py parent_reads/
+klassify extract parent_reads.filtered.tsv parent_reads/*.fa
+cat *.extracted.fa > parent_reads.filtered.fa
+rm *.extracted.fa
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa parent_reads.filtered.fa \
+    --split-prefix /tmp/chimeric_parent_reads | samtools sort -@ 8 -o parent_reads.filtered.bam
 ```
 
 5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent reads (so we are not affected by assembly errors)
 
 ```console
-samtools index chimeric_f1_reads.parents.bam
-samtools index chimeric_parent_reads.parents.bam
-mosdepth -t 8 -n --by 10000 chimeric_f1_reads.mosdeth chimeric_f1_reads.parents.bam
-mosdepth -t 8 -n --by 10000 chimeric_parent_reads.mosdeth chimeric_parent_reads.parents.bam
-python scripts/generate_regions.py \
-    chimeric_f1_reads.mosdeth.regions.bed.gz chimeric_parent_reads.mosdeth.regions.bed.gz
+samtools index f1_reads.filtered.bam
+samtools index parent_reads.filtered.bam
+mosdepth -t 8 -n --by 10000 f1_reads.mosdepth f1_reads.filtered.bam
+mosdepth -t 8 -n --by 10000 parent_reads.mosdeth parent_reads.filtered.bam
+python scripts/generate_regions.py f1_reads.filtered.bam parent_reads.filtered.bam
 ```
