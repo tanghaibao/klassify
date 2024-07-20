@@ -49,7 +49,7 @@ This generates an index for all the unique kmers (present in a single contig/chr
 ```console
 mkdir f1_reads f1_classify
 faSplit about f1_reads.fa 2000000000 f1_reads/
-klassify classify singleton_kmers.bc f1_reads/*.fa -o f1_classify
+klassify classify kmers.bc f1_reads/*.fa -o f1_classify
 python scripts/classify_reads.py f1_classify
 ```
 
@@ -68,7 +68,7 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa f1_classi
 ```console
 mkdir parent_reads parent_classify
 faSplit about parent_reads.fa 2000000000 parent_reads/
-klassify classify singleton_kmers.bc parent_reads/*.fa -o parent_classify
+klassify classify kmers.bc parent_reads/*.fa -o parent_classify
 python scripts/classify_reads.py parent_classify
 klassify extract parent_classify.filtered.tsv parent_reads/*.fa
 cat *.extracted.fa > parent_classify.fa
