@@ -23,7 +23,7 @@ Following are examples of recominant reads identified by this tool:
 ## Installation
 
 ```bash
-cargo build -r
+cargo install --path .
 ```
 
 ## Usage

@@ -10,18 +10,22 @@ use std::{
 };
 
 const KMER_SIZE: u8 = 24;
+const SINGLETON_KMERS: &str = "singleton_kmers.bc";
 
 #[derive(Parser, Debug)]
 pub struct BuildArgs {
     /// Input FASTA files
     pub fasta_files: Vec<String>,
+    /// Output file
+    #[clap(short, long, default_value = SINGLETON_KMERS)]
+    pub output_file: String,
     /// K-mer size
     #[clap(short, long, default_value_t = KMER_SIZE)]
     pub kmer_size: u8,
 }
 
 /// Convert FASTA files to singleton k-mers
-pub fn build(fasta_files: &Vec<String>, kmer_size: u8) {
+pub fn build(fasta_files: &Vec<String>, output_file: &str, kmer_size: u8) {
     let all_sets = fasta_files
         .par_iter()
         .map(|fasta_file| get_kmers(fasta_file, kmer_size))
@@ -63,7 +67,6 @@ pub fn build(fasta_files: &Vec<String>, kmer_size: u8) {
         fasta_files,
         kmers: singletons,
     };
-    let output_file = "singleton_kmers.bc";
     let writer = BufWriter::new(File::create(output_file).unwrap());
     serialize_into(writer, &singleton_kmers).expect("serialization to succeed");
     log::info!("Singleton kmers written to `{}`", output_file);
