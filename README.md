@@ -1,5 +1,7 @@
 # klassify
 
+![klassify-logo](https://www.dropbox.com/scl/fi/bjvfamep0aoxka0dcg2zi/klassify-logo.png?rlkey=8vmvacehs2amuaoi0gvgyh28r&st=ohygf458&raw=1)
+
 Classify chimeric reads based on unique kmer contents and identify the
 breakpoint locations.
 
@@ -13,6 +15,10 @@ is designed to compare progeny (e.g. F1) reads to the parental genome. The key
 idea is an extension to the trio binning approach, where we use the unique kmers
 from each chromosome/contig of the parental genomes to classify the reads that
 bridge two different chromosomes/contigs.
+
+Following are examples of recominant reads identified by this tool:
+
+![recombinant-read](https://www.dropbox.com/scl/fi/tduxwsh0wcy2zdw8zopdm/recombinant-reads.png?rlkey=xci43gwwy84dbcdvs2n7ekk18&st=sewwc9s0&raw=1)
 
 ## Installation
 
