@@ -1,6 +1,7 @@
 use clap::Parser;
 use log;
 use rust_htslib::bam::{IndexedReader, Read};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
@@ -21,6 +22,7 @@ pub fn extract_bam(region_file: &str, bam_file: &str) {
     let mut bam = IndexedReader::from_path(bam_file).expect("valid BAM file");
     let output_file = region_file.to_string() + ".extracted.fasta";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
+    let mut seen = HashSet::new();
     for region in regions {
         let region = region.split(':').collect::<Vec<&str>>();
         let chrom = region[0];
@@ -30,7 +32,20 @@ pub fn extract_bam(region_file: &str, bam_file: &str) {
         let _ = bam.fetch((chrom, start, end)).expect("valid region");
         for record in bam.records() {
             let record = record.expect("valid record");
+            if record.is_unmapped()
+                || record.is_secondary()
+                || record.is_quality_check_failed()
+                || record.is_duplicate()
+                || record.is_supplementary()
+            {
+                continue;
+            }
             let id = String::from_utf8(record.qname().to_vec()).expect("valid read ID");
+            if seen.contains(&id) {
+                log::info!("Skipping duplicate read {}", id);
+                continue;
+            }
+            seen.insert(id.clone());
             let seq = record.seq();
             writeln!(
                 writer,

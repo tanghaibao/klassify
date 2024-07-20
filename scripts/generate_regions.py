@@ -1,10 +1,10 @@
 import os.path as op
+import sys
 
 from collections import Counter, defaultdict
 from typing import List
 
 import pandas as pd
-import sys
 
 
 def load_bed(bed: str) -> pd.DataFrame:
@@ -40,7 +40,9 @@ def main(args: List[str]):
             continue
         regions[chrom] = sorted(data, key=lambda x: x[2], reverse=True)
         chrom_selected = [
-            (chrom, a, b, str(round(c))) for (a, b, c) in regions[chrom] if 5 < c < 100
+            (chrom, a, b, str(round(c)))
+            for (a, b, c) in regions[chrom]
+            if 5 <= c <= 100
         ]
         selected += chrom_selected
         d.append(
@@ -72,7 +74,7 @@ def main(args: List[str]):
 
     # Write the merged regions to a file
     regions_file = f"{prefix}.regions.tsv"
-    counter = Counter()
+    counter: Counter[str] = Counter()
     with open(regions_file, "w", encoding="utf-8") as fw:
         for chrom, start, end, score in merged:
             print(f"{chrom}:{start}-{end}\t{score}", file=fw)
