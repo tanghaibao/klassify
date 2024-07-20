@@ -1,6 +1,8 @@
+import sys
+
 from glob import glob
 from multiprocessing import Pool
-from typing import Set, Tuple
+from typing import List, Set, Tuple
 
 import pandas as pd
 
@@ -19,7 +21,6 @@ def get_reads(rc: str) -> pd.DataFrame:
     rf = pd.read_csv(rc, sep="\t")
     filtered = []
     for _, row in rf.iterrows():
-        length = row["Length"]
         kmers = row["Kmers"]
         classification = row["Classification"]
         if "Unclassified" in classification:
@@ -37,13 +38,15 @@ def get_reads(rc: str) -> pd.DataFrame:
     return pd.DataFrame(filtered)
 
 
-def main():
-    rcs = glob("9208-classify/*.read_classifications.tsv")
+def main(args: List[str]):
+    workdir = args[0]
+    rcs = glob(f"{workdir}/*.read_classifications.tsv")
+    print(f"Found f{len(rcs)} read classifications")
     pool = Pool(100)
     dfs = pool.map(get_reads, rcs)
     df = pd.concat(dfs)
-    df.to_csv("9208-classify.filtered.tsv", sep="\t", index=False)
+    df.to_csv(f"{workdir}.filtered.tsv", sep="\t", index=False)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
