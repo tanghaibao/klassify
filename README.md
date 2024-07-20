@@ -57,7 +57,7 @@ python scripts/classify_reads.py f1_classify
 
 ```console
 klassify extract f1_classify.filtered.tsv f1_reads/*.fa -o f1_classify.fa
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa f1_classify.fa \
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.fa \
     --split-prefix f1_classify | samtools sort -@ 8 -o f1_classify.bam
 ```
 
@@ -69,7 +69,7 @@ faSplit about parent_reads.fa 2000000000 parent_reads/
 klassify classify kmers.bc parent_reads/*.fa -o parent_classify
 python scripts/classify_reads.py parent_classify
 klassify extract parent_classify.filtered.tsv parent_reads/*.fa -o parent_classify.fa
-minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa parent_classify.fa \
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classify.fa \
     --split-prefix parent_classify | samtools sort -@ 8 -o parent_classify.bam
 ```
 
