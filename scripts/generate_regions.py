@@ -1,10 +1,10 @@
 import os.path as op
+import sys
 
 from collections import Counter, defaultdict
 from typing import List
 
 import pandas as pd
-import sys
 
 
 def load_bed(bed: str) -> pd.DataFrame:
