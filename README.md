@@ -23,7 +23,7 @@ Following are examples of recominant reads identified by this tool:
 ## Installation
 
 ```bash
-cargo build -r
+cargo install --path .
 ```
 
 ## Usage
@@ -39,18 +39,17 @@ Suppose you have 3 input files:
 ```console
 mkdir ref
 faSplit byname parents.genome.fa ref/
-klassify build ref/*.fa
+klassify build ref/*.fa -o kmers.bc
 ```
 
-This generates a file called `singleton_kmers.bc` that indexes all the unique kmers.
+This generates an index for all the unique kmers (present in a single contig/chromosome).
 
-2. Classify the progeny (e.g. F1) reads based on the unique kmers
+1. Classify the progeny (e.g. F1) reads based on the unique kmers
 
 ```console
 mkdir f1_reads f1_classify
 faSplit about f1_reads.fa 2000000000 f1_reads/
-klassify classify singleton_kmers.bc f1_reads/*.fa
-mv *.read_classfications.tsv f1_classify/
+klassify classify singleton_kmers.bc f1_reads/*.fa -o f1_classify
 python scripts/classify_reads.py f1_classify
 ```
 
@@ -68,9 +67,8 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no ref/parents.genome.fa f1_classi
 
 ```console
 mkdir parent_reads parent_classify
-faSplit about parent_reads.fa 1000000000 parent_reads/
-klassify classify singleton_kmers.bc parent_reads/*.fa
-mv *.read_classfications.tsv parent_classify/
+faSplit about parent_reads.fa 2000000000 parent_reads/
+klassify classify singleton_kmers.bc parent_reads/*.fa -o parent_classify
 python scripts/classify_reads.py parent_classify
 klassify extract parent_classify.filtered.tsv parent_reads/*.fa
 cat *.extracted.fa > parent_classify.fa

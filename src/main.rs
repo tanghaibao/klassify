@@ -45,10 +45,14 @@ fn main() {
     let args = Args::parse();
     match args.subcommand {
         SubCommand::Build(build) => {
-            build::build(&build.fasta_files, build.kmer_size);
+            build::build(&build.fasta_files, &build.output_file, build.kmer_size);
         }
         SubCommand::Classify(classify) => {
-            classify::classify(&classify.bincode_file, &classify.reads_file);
+            classify::classify(
+                &classify.bincode_file,
+                &classify.reads_file,
+                &classify.output_dir,
+            );
         }
         SubCommand::Info(info) => {
             info::info(&info.bincode_file);

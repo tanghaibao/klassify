@@ -17,22 +17,38 @@ pub struct ClassifyArgs {
     pub bincode_file: String,
     /// Read file to classify
     pub reads_file: Vec<String>,
+    /// Output directory
+    #[clap(short, long, default_value = "output")]
+    pub output_dir: String,
 }
 
 /// Classify reads based on unique (singleton) kmers.
-pub fn classify(bincode_file: &str, reads_files: &Vec<String>) {
+pub fn classify(bincode_file: &str, reads_files: &Vec<String>, output_dir: &str) {
     let singleton_kmers = load_kmer_db(bincode_file);
     let kmer_to_file = map_kmer_to_file(&singleton_kmers);
-    reads_files.par_iter().for_each(|reads_file| {
-        classify_one(&singleton_kmers, &kmer_to_file, reads_file);
-    });
+    let output_files = reads_files
+        .par_iter()
+        .map(|reads_file| classify_one(&singleton_kmers, &kmer_to_file, reads_file))
+        .collect::<Vec<_>>();
+    // Move output files to the output directory
+    std::fs::create_dir_all(output_dir).expect("valid output directory");
+    for output_file in output_files {
+        let output_file = std::path::Path::new(&output_file);
+        let output_dir = std::path::Path::new(output_dir);
+        std::fs::rename(
+            output_file,
+            output_dir.join(output_file.file_name().unwrap()),
+        )
+        .expect("valid rename");
+    }
+    log::info!("Read classifications moved to `{}`", output_dir);
 }
 
 fn classify_one(
     singleton_kmers: &SingletonKmers,
     kmer_to_file: &HashMap<u64, usize>,
     reads_file: &str,
-) {
+) -> String {
     // Classify the reads
     let mut reader = parse_fastx_file(reads_file).expect("valid reads file");
     let file_prefix = prefix(reads_file);
@@ -91,4 +107,5 @@ fn classify_one(
         writeln!(writer, "{}", to_write).unwrap();
     }
     log::info!("Read classifications written to `{}`", output_file);
+    output_file
 }
