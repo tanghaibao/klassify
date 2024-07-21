@@ -17,15 +17,24 @@ def load_bed(bed: str) -> pd.DataFrame:
 
 
 def main(args: List[str]):
-    abed, p1_bed, p2_bed = args[:3]
-    af = load_bed(abed)
-    p1f = load_bed(p1_bed)
-    p2f = load_bed(p2_bed)
-
     # Find the regions that have high depth per chrom
     regions = defaultdict(list)
-    df = af.copy()
-    df["depth"] = af["depth"] / (p1f["depth"] + p2f["depth"] + 1)
+    if len(args) == 3:  # child, parent1, parent2
+        abed, p1_bed, p2_bed = args[:3]
+        af = load_bed(abed)
+        p1f = load_bed(p1_bed)
+        p2f = load_bed(p2_bed)
+
+        df = af.copy()
+        df["depth"] = af["depth"] / (p1f["depth"] + p2f["depth"] + 1)
+    elif len(args) == 2:  # child, parents
+        abed, p1_bed = args[:2]
+        af = load_bed(abed)
+        p1f = load_bed(p1_bed)
+
+        df = af.copy()
+        df["depth"] = af["depth"] / (p1f["depth"] + 1)
+
     for _, row in df.iterrows():
         chrom = row["chrom"]
         start = row["start"]
