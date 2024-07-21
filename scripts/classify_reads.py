@@ -2,19 +2,9 @@ import sys
 
 from glob import glob
 from multiprocessing import Pool
-from typing import List, Set, Tuple
+from typing import List
 
 import pandas as pd
-
-
-def get_pairs() -> Set[Tuple[str, str]]:
-    df = pd.read_csv("chimeric_chrom_pairs.tsv", sep="\t")
-    pairs = set()
-    for _, row in df.iterrows():
-        a = row["ChromA"]
-        b = row["ChromB"]
-        pairs.add(tuple(sorted((a, b))))
-    return pairs
 
 
 def get_reads(rc: str) -> pd.DataFrame:
@@ -27,8 +17,8 @@ def get_reads(rc: str) -> pd.DataFrame:
             continue
         ab, scores = classification.split(":", 1)
         a, b = ab.replace(".fa", "").split(",")
-        if a[:7] != b[:7]:
-            continue
+        # if a[:7] != b[:7]:
+        #     continue
         a, b = tuple(sorted((a, b)))
         ascore, bscore = scores.split(",", 1)
         ascore, bscore = int(ascore), int(bscore)
