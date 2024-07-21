@@ -17,8 +17,8 @@ def get_reads(rc: str) -> pd.DataFrame:
             continue
         ab, scores = classification.split(":", 1)
         a, b = ab.replace(".fa", "").split(",")
-        # if a[:7] != b[:7]:
-        #     continue
+        if a[:7] != b[:7]:
+            continue
         a, b = tuple(sorted((a, b)))
         ascore, bscore = scores.split(",", 1)
         ascore, bscore = int(ascore), int(bscore)
