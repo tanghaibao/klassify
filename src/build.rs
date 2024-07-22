@@ -1,4 +1,4 @@
-use crate::models::{prefix, SingletonKmers};
+use crate::models::{prefix_until_dot, SingletonKmers};
 use bincode::serialize_into;
 use clap::Parser;
 use needletail::{parse_fastx_file, Sequence};
@@ -10,7 +10,7 @@ use std::{
 };
 
 const KMER_SIZE: u8 = 24;
-const SINGLETON_KMERS: &str = "singleton_kmers.bc";
+const SINGLETON_KMERS: &str = "kmers.bc";
 
 #[derive(Parser, Debug)]
 pub struct BuildArgs {
@@ -60,7 +60,10 @@ pub fn build(fasta_files: &Vec<String>, output_file: &str, kmer_size: u8) {
             singleton_kmers_per_file
         })
         .collect::<Vec<_>>();
-    let fasta_files = fasta_files.iter().map(|x| prefix(x)).collect::<Vec<_>>();
+    let fasta_files = fasta_files
+        .iter()
+        .map(|x| prefix_until_dot(x))
+        .collect::<Vec<_>>();
     // Serialize the singleton kmers to a file
     let singleton_kmers = SingletonKmers {
         kmer_size,

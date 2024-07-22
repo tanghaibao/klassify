@@ -16,7 +16,7 @@ def get_reads(rc: str) -> pd.DataFrame:
         if "Unclassified" in classification:
             continue
         ab, scores = classification.split(":", 1)
-        a, b = ab.replace(".fa", "").split(",")
+        a, b = ab.split(",")
         if a[:7] != b[:7]:
             continue
         a, b = tuple(sorted((a, b)))
