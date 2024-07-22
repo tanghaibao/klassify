@@ -7,7 +7,6 @@ use klassify::classify;
 use klassify::extract;
 use klassify::extract_bam;
 use klassify::info;
-use klassify::regions;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
@@ -30,8 +29,6 @@ enum SubCommand {
     Extract(extract::ExtractArgs),
     #[clap(about = "Extract reads from BAM")]
     ExtractBam(extract_bam::ExtractBamArgs),
-    #[clap(about = "Prepare BAM files and generate depths for each bin")]
-    Regions(regions::RegionsArgs),
 }
 
 fn main() {
@@ -72,9 +69,6 @@ fn main() {
         }
         SubCommand::ExtractBam(extract_bam) => {
             extract_bam::extract_bam(&extract_bam.regions_file, &extract_bam.bam_file);
-        }
-        SubCommand::Regions(regions) => {
-            regions::regions(&regions.bam_files);
         }
     }
 }
