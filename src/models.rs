@@ -74,3 +74,14 @@ pub fn prefix(file_path: &str) -> String {
 pub fn prefix_until_dot(file_path: &str) -> String {
     prefix(file_path).split('.').next().unwrap().to_string()
 }
+
+/// Run shell command
+pub fn sh(command: &str) -> bool {
+    log::info!("{}", command);
+    let status = std::process::Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .status()
+        .expect("failed to execute process");
+    status.success()
+}
