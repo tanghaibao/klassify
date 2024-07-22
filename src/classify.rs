@@ -18,7 +18,7 @@ pub struct ClassifyArgs {
     /// Read file to classify
     pub reads_file: Vec<String>,
     /// Output directory
-    #[clap(short, long, default_value = "output")]
+    #[clap(short, long)]
     pub output_dir: String,
 }
 

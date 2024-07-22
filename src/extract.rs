@@ -15,10 +15,11 @@ pub struct ExtractArgs {
     /// FASTA files to extract kmers
     pub fasta_files: Vec<String>,
     /// Output file
-    #[clap(short, long, default_value = "extracted.fasta")]
+    #[clap(short, long)]
     pub output_file: String,
 }
 
+/// Get read IDs from a TSV file
 fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
     let mut read_map = HashMap::new();
     let reader = ReaderBuilder::new()
@@ -33,12 +34,13 @@ fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
             .get(record.len() - 1)
             .expect("valid label")
             .to_string();
-        let new_read_id = label + "_" + &read_id;
+        let new_read_id = label + "_" + read_id.as_str();
         read_map.insert(read_id, new_read_id);
     }
     read_map
 }
 
+/// Extract reads from a single FASTA/FASTQ file
 fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) -> String {
     let mut reader = parse_fastx_file(fasta_file).expect("valid reads file");
     let file_prefix = prefix(fasta_file);
