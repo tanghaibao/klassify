@@ -76,9 +76,6 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
 5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent reads (so we are not affected by assembly errors)
 
 ```console
-samtools index f1_classify.bam
-samtools index parent_classify.bam
-mosdepth -t 8 -n --by 10000 f1_classify.mosdepth f1_classify.bam
-mosdepth -t 8 -n --by 10000 parent_classify.mosdeth parent_classify.bam
+klassify regions *_classify.bam
 python scripts/generate_regions.py f1_classify.bam parent_classify.bam
 ```
