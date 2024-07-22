@@ -15,7 +15,7 @@ pub struct ExtractArgs {
     /// FASTA files to extract kmers
     pub fasta_files: Vec<String>,
     /// Output file
-    #[clap(short, long, default_value = "extracted.fasta")]
+    #[clap(short, long)]
     pub output_file: String,
 }
 
