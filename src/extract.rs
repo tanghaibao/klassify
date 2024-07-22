@@ -34,7 +34,7 @@ fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
             .get(record.len() - 1)
             .expect("valid label")
             .to_string();
-        let new_read_id = label + "_" + &read_id;
+        let new_read_id = label + "_" + read_id.as_str();
         read_map.insert(read_id, new_read_id);
     }
     read_map
