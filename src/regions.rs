@@ -3,75 +3,109 @@ use clap::Parser;
 use log;
 use perbase_lib::{
     par_granges::{self, RegionProcessor},
-    position::pileup_position::PileupPosition,
-    read_filter::ReadFilter,
+    position::{
+        range_positions::{BedFormatRangePositions, RangePositions},
+        Position,
+    },
+    read_filter::{DefaultReadFilter, ReadFilter},
+    utils,
 };
 use rayon::prelude::*;
-use rust_htslib::bam::{self, pileup::Alignment, record::Record, Read};
+use rust_htslib::bam::{self, ext::BamRecordExtensions, Read};
+use smartstring::alias::String;
 use std::path::PathBuf;
 
-// To use ParGranges you will need to implement a [`RegionProcessor`](par_granges::RegionProcessor),
-// which requires a single method [`RegionProcessor::process_region`](par_granges::RegionProcessor::process_region)
-// and an associated type P, which is the type of the values returned in the Vec by
-// `process_region`. The returned `P` objects will be kept in order and accessible on the
-// receiver channel returned by the `[ParGranges::process`](par_granges::ParGranges::process) method.
-struct BasicProcessor<F: ReadFilter> {
-    // An indexed bamfile to query for the region we were passed
-    bamfile: PathBuf,
-    // This is an object that implements `position::ReadFilter` and will be applied to
-    // each read
+/// Holds the info needed for [par_io::RegionProcessor] implementation
+struct OnlyDepthProcessor<F: ReadFilter> {
+    /// path to indexed BAM/CRAM
+    reads: PathBuf,
+    /// Indicate whether or not to keep positions with 0 depth
+    keep_zeros: bool,
+    /// implementation of [position::ReadFilter] that will be used
     read_filter: F,
 }
 
-// A struct that holds the filter values that will be used to implement `ReadFilter`
-struct BasicReadFilter {
-    include_flags: u16,
-    exclude_flags: u16,
-    min_mapq: u8,
-}
-
-// The actual implementation of `ReadFilter`
-impl ReadFilter for BasicReadFilter {
-    // Filter reads based SAM flags and mapping quality, true means pass
+impl<F: ReadFilter> OnlyDepthProcessor<F> {
+    /// Sum the counts within the region to get the depths at each RangePosition
     #[inline]
-    fn filter_read(&self, read: &Record, _alignment: Option<&Alignment>) -> bool {
-        let flags = read.flags();
-        (!flags) & &self.include_flags == 0
-            && flags & &self.exclude_flags == 0
-            && &read.mapq() >= &self.min_mapq
+    fn sum_counter(
+        &self,
+        counter: Vec<i32>,
+        contig: &str,
+        region_start: u32,
+    ) -> Vec<RangePositions> {
+        let mut sum: i32 = 0;
+        let mut results = vec![];
+        for (i, count) in counter.iter().enumerate() {
+            sum += count;
+            if sum != 0 || self.keep_zeros {
+                let mut pos = RangePositions::new(String::from(contig), region_start + i as u32);
+                pos.depth = u32::try_from(sum).expect("All depths are positive");
+                pos.end = region_start + i as u32 + 1;
+                results.push(pos);
+            }
+        }
+        results
+    }
+
+    fn process_region_fast(&self, tid: u32, start: u32, stop: u32) -> Vec<RangePositions> {
+        // Create a reader
+        let mut reader =
+            bam::IndexedReader::from_path(&self.reads).expect("Indexed Reader for region");
+
+        let header = reader.header().to_owned();
+        // fetch the region of interest
+        reader.fetch((tid, start, stop)).expect("Fetched a region");
+
+        let mut counter: Vec<i32> = vec![0; (stop - start) as usize];
+        // Walk over each read, counting the starts and ends
+        for record in reader
+            .rc_records()
+            .map(|r| r.expect("Read record"))
+            .filter(|read| self.read_filter.filter_read(&read, None))
+        {
+            let rec_start = u32::try_from(record.reference_start()).expect("check overflow");
+            let rec_stop = u32::try_from(record.reference_end()).expect("check overflow");
+
+            // rectify start / stop with region boundaries
+            // NB: impossible for rec_start > start since this is from fetch and we aren't splitting bam
+            let adjusted_start = if rec_start < start {
+                0
+            } else {
+                (rec_start - start) as usize
+            };
+
+            let mut dont_count_stop = false; // set this flag if this interval extends past the end of our region
+            let adjusted_stop = if rec_stop >= stop {
+                dont_count_stop = true;
+                counter.len() - 1
+            } else {
+                (rec_stop - start) as usize
+            };
+
+            counter[adjusted_start] += 1;
+            // Check if end of interval extended past region end
+            if !dont_count_stop {
+                counter[adjusted_stop] -= 1;
+            }
+        }
+
+        // Sum the counter and merge same-depth ranges of positions
+        let contig = std::str::from_utf8(header.tid2name(tid)).unwrap();
+        self.sum_counter(counter, contig, start)
     }
 }
 
-// Implementation of the `RegionProcessor` trait to process each region
-impl<F: ReadFilter> RegionProcessor for BasicProcessor<F> {
-    type P = PileupPosition;
+/// Implement [par_io::RegionProcessor] for [SimpleProcessor]
+impl<F: ReadFilter> RegionProcessor for OnlyDepthProcessor<F> {
+    /// Objects of [position::Position] will be returned by each call to [SimpleProcessor::process_region]
+    type P = RangePositions;
 
-    // This function receives an interval to examine.
-    fn process_region(&self, tid: u32, start: u32, stop: u32) -> Vec<Self::P> {
-        let mut reader = bam::IndexedReader::from_path(&self.bamfile).expect("Indexed reader");
-        let header = reader.header().to_owned();
-        // fetch the region
-        reader.fetch((tid, start, stop)).expect("Fetched ROI");
-        // Walk over pileups
-        let result: Vec<PileupPosition> = reader
-            .pileup()
-            .flat_map(|p| {
-                let pileup = p.expect("Extracted a pileup");
-                // Verify that we are within the bounds of the chunk we are iterating on
-                // Since pileup will pull reads that overhang edges.
-                if pileup.pos() >= start && pileup.pos() < stop {
-                    Some(PileupPosition::from_pileup(
-                        pileup,
-                        &header,
-                        &self.read_filter,
-                        None,
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        result
+    /// Process a region by fetching it from a BAM/CRAM, getting a pileup, and then
+    /// walking the pileup (checking bounds) to create Position objects according to
+    /// the defined filters
+    fn process_region(&self, tid: u32, start: u32, stop: u32) -> Vec<RangePositions> {
+        self.process_region_fast(tid, start, stop)
     }
 }
 
@@ -97,15 +131,12 @@ fn regions_one(bam_file: &str) {
         log::info!("Built index for `{}`", bam_file);
     }
     // Create the read filter
-    let read_filter = BasicReadFilter {
-        include_flags: 0,
-        exclude_flags: 3848,
-        min_mapq: 20,
-    };
+    let read_filter = DefaultReadFilter::new(0, 512, 0);
 
     // Create the region processor
-    let basic_processor = BasicProcessor {
-        bamfile: bam_file.into(),
+    let depth_processor = OnlyDepthProcessor {
+        reads: PathBuf::from(bam_file),
+        keep_zeros: true,
         read_filter: read_filter,
     };
 
@@ -119,17 +150,19 @@ fn regions_one(bam_file: &str) {
         None,                    // optional allowed number of threads, defaults to max
         None,                    // optional chunksize modification
         None, // optional modifier on the size of the channel for sending Positions
-        basic_processor,
+        depth_processor,
     );
 
     // Run the processor
     let receiver = par_granges_runner.process().unwrap();
-    // let file_prefix = prefix(bam_file);
-    // let output_bed = file_prefix + ".regions.bed";
+    let file_prefix = prefix(bam_file);
+    let output_bed = file_prefix + ".regions.bed.gz";
+    let mut writer = utils::get_writer(&Some(output_bed), true, false, 4, 2).unwrap();
     // Pull the in-order results from the receiver channel
-    receiver.into_iter().for_each(|p: PileupPosition| {
-        // Note that the returned values are required to be `serde::Serialize`, so more fancy things
-        // than just debug printing are doable.
-        println!("{:?}", p);
-    });
+    for pos in receiver.into_iter() {
+        writer
+            .serialize(BedFormatRangePositions::from(pos))
+            .unwrap();
+    }
+    writer.flush().unwrap();
 }
