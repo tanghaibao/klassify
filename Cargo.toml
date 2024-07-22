@@ -11,6 +11,7 @@ env_logger = "*"
 libc = "*"
 log = "*"
 needletail = "*"
+perbase = "*"
 rayon = "*"
 rust-htslib = { version = "0.46" }
 serde = { version = "*", features = ["derive"] }

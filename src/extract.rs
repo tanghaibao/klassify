@@ -19,6 +19,7 @@ pub struct ExtractArgs {
     pub output_file: String,
 }
 
+/// Get read IDs from a TSV file
 fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
     let mut read_map = HashMap::new();
     let reader = ReaderBuilder::new()
@@ -39,6 +40,7 @@ fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
     read_map
 }
 
+/// Extract reads from a single FASTA/FASTQ file
 fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) -> String {
     let mut reader = parse_fastx_file(fasta_file).expect("valid reads file");
     let file_prefix = prefix(fasta_file);
