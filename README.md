@@ -76,3 +76,12 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
 ```console
 klassify regions f1_classify.bam parent_classify.bam
 ```
+
+That's it! The breakpoint locations in the parental genomes are in
+`f1_classify.regions.tsv`, where column 2 has the depth within each 10kb bin
+around the breakpoint:
+
+```console
+SoChr01A:118800000-118810000    10
+SoChr01B:43130000-43150000      8,12
+```
