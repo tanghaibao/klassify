@@ -5,10 +5,10 @@ use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
+use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
-use std::{collections::HashMap, io::BufWriter};
 
 /// Thresholds for filtering reads
 const KMER_THRESHOLD: i32 = 300;
@@ -75,9 +75,24 @@ pub fn classify(
         return;
     }
     let output_path = format!("{}.filtered.tsv", output_dir);
-    let mut file = File::create(&Path::new(&output_path)).expect("Unable to create file");
+    let mut writer =
+        BufWriter::new(File::create(&Path::new(&output_path)).expect("Unable to create file"));
+
+    // Write the header again, now with the label column
+    writeln!(
+        writer,
+        "ID\tLength\tKmers\tClassification\t{}\tLabel",
+        singleton_kmers
+            .fasta_files
+            .iter()
+            .map(|count| count.to_string())
+            .collect::<Vec<_>>()
+            .join("\t")
+    )
+    .unwrap();
+
     for read in all_reads.iter() {
-        writeln!(file, "{}", read.join("\t")).expect("Unable to write row");
+        writeln!(writer, "{}", read.join("\t"),).expect("Unable to write row");
     }
     log::info!(
         "Wrote {} filtered read classification to `{}`",
@@ -202,7 +217,7 @@ fn get_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
             && scores[1] >= MINOR_SCORE_THRESHOLD
         {
             new_row.push(format!("{}_{}", a, b));
-            filtered.push(row);
+            filtered.push(new_row);
         }
     }
     log::info!("Filtered {} reads from `{}`", filtered.len(), rc);
