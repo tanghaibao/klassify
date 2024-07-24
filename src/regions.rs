@@ -18,6 +18,9 @@ const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 pub struct RegionsArgs {
     /// BAM files
     pub bam_files: Vec<String>,
+    /// Retain only chimeras between chromosomes, must contain "Chr" and "chr"
+    #[clap(short, long, default_value_t = false)]
+    pub no_chr_only: bool,
 }
 
 #[derive(Debug)]
@@ -40,7 +43,7 @@ impl BedRecord {
 }
 
 /// Prepare BAM files and generate depths for each bin
-pub fn regions(bam_files: &Vec<String>) {
+pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
     let mut bed_files = Vec::new();
     for bam_file in bam_files {
         let bed_file = if bam_file.ends_with(".bam") {
@@ -52,7 +55,7 @@ pub fn regions(bam_files: &Vec<String>) {
     }
 
     // Perform the depth analysis
-    process_bedfiles(bed_files);
+    process_bedfiles(bed_files, chr_only);
 }
 
 /// Prepare one BAM file and generate depths for each bin
@@ -99,7 +102,7 @@ fn load_bed(bed: &str) -> Vec<BedRecord> {
 }
 
 /// Process F1 and parent BED files to generate candidate regions.
-fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
+fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i32> {
     let child_bed = &bed_files[0];
     let parent1_bed = &bed_files[1];
     let parent2_bed = if bed_files.len() == 3 {
@@ -139,7 +142,7 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
     let mut selected = Vec::new();
 
     for (chrom, data) in &mut regions {
-        if !chrom.contains("Chr") {
+        if chr_only && !chrom.contains("Chr") && !chrom.contains("chr") {
             continue;
         }
 
