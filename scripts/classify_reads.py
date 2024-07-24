@@ -29,7 +29,7 @@ def get_reads(rc: str) -> pd.DataFrame:
 
 
 def main(args: List[str]):
-    workdir = args[0].rstrip()
+    workdir = args[0].rstrip("/")
     rcs = glob(f"{workdir}/*.read_classifications.tsv")
     print(f"Found {len(rcs)} read classifications")
     pool = Pool(100)
