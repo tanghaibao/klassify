@@ -19,6 +19,7 @@ pub struct BreakpointArgs {
     pub fasta_files: Vec<String>,
 }
 
+/// Generate the kmer BED file for multiple FASTA files
 pub fn breakpoint(bincode_file: &str, fasta_files: &Vec<String>) {
     let singleton_kmers = load_kmer_db(bincode_file);
     let kmer_to_file = map_kmer_to_file(&singleton_kmers);
@@ -27,6 +28,7 @@ pub fn breakpoint(bincode_file: &str, fasta_files: &Vec<String>) {
     });
 }
 
+/// Generate the kmer BED file for one FASTA file
 fn breakpoint_one(
     singleton_kmers: &SingletonKmers,
     kmer_to_file: &HashMap<u64, usize>,

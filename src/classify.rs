@@ -63,7 +63,7 @@ pub fn classify(
     // Collect the read classifications
     let dfs: Vec<Vec<ReadClassification>> = new_output_files
         .par_iter()
-        .map(|rc| get_reads(rc, prefix_length))
+        .map(|rc| filter_reads(rc, prefix_length))
         .collect();
     let mut all_reads = Vec::new();
     for df in dfs {
@@ -106,6 +106,7 @@ pub fn classify(
     );
 }
 
+/// Classify one FASTA/FASTQ file
 fn classify_one(
     singleton_kmers: &SingletonKmers,
     kmer_to_file: &HashMap<u64, usize>,
@@ -175,7 +176,8 @@ fn classify_one(
     output_file
 }
 
-fn get_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
+/// Main read filtering logic
+fn filter_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
     let file = File::open(rc).expect("Unable to open file");
     let reader = BufReader::new(file);
     let mut filtered = Vec::new();

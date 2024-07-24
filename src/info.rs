@@ -24,6 +24,7 @@ pub fn load_kmer_db(bincode_file: &str) -> SingletonKmers {
     singleton_kmers
 }
 
+/// Create mapping between kmer and the file index
 pub fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize> {
     // Convert to kmer => file index
     let mut kmer_to_file = HashMap::new();
