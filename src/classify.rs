@@ -10,6 +10,11 @@ use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::{collections::HashMap, io::BufWriter};
 
+/// Thresholds for filtering reads
+const KMER_THRESHOLD: i32 = 300;
+const SCORE_THRESHOLD: i32 = 50;
+const MINOR_SCORE_THRESHOLD: i32 = 10;
+
 #[derive(Parser, Debug)]
 pub struct ClassifyArgs {
     /// Bincode file
@@ -33,6 +38,7 @@ pub fn classify(
     output_dir: &str,
     prefix_length: usize,
 ) {
+    let output_dir = output_dir.trim_end_matches('/');
     let singleton_kmers = load_kmer_db(bincode_file);
     let kmer_to_file = map_kmer_to_file(&singleton_kmers);
     let output_files = reads_files
@@ -48,11 +54,13 @@ pub fn classify(
     for (output_file, new_output_file) in output_files.iter().zip(new_output_files.iter()) {
         std::fs::rename(output_file, new_output_file).expect("valid rename");
     }
-    log::info!("Read classifications moved to `{}`", output_dir);
+    log::info!(
+        "Moved {} read classification to `{}`",
+        new_output_files.len(),
+        output_dir
+    );
 
     // Collect the read classifications
-    println!("Found {} read classifications", new_output_files.len());
-
     let dfs: Vec<Vec<ReadClassification>> = new_output_files
         .par_iter()
         .map(|rc| get_reads(rc, prefix_length))
@@ -61,15 +69,26 @@ pub fn classify(
     for df in dfs {
         all_reads.extend(df);
     }
-    println!("Processed {} read classifications", all_reads.len());
 
-    if !all_reads.is_empty() {
-        let output_path = format!("{}.filtered.tsv", output_dir);
-        let mut file = File::create(&Path::new(&output_path)).expect("Unable to create file");
-        for read in all_reads {
-            writeln!(file, "{}", read.join("\t")).expect("Unable to write row");
-        }
+    if all_reads.is_empty() {
+        log::error!("No reads passed the filter");
+        return;
     }
+    let output_path = format!("{}.filtered.tsv", output_dir);
+    let mut file = File::create(&Path::new(&output_path)).expect("Unable to create file");
+    for read in all_reads.iter() {
+        writeln!(file, "{}", read.join("\t")).expect("Unable to write row");
+    }
+    log::info!(
+        "Wrote {} filtered read classification to `{}`",
+        all_reads.len(),
+        output_path,
+    );
+    log::info!(
+        "Filter rules: unique kmer ≧ {}, A unique + B unique ≧ {}%)",
+        KMER_THRESHOLD,
+        SCORE_THRESHOLD,
+    );
 }
 
 fn classify_one(
@@ -82,7 +101,7 @@ fn classify_one(
     let file_prefix = prefix(reads_file);
     let output_file = file_prefix + ".read_classifications.tsv";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
-    log::info!("Classifying reads");
+    log::info!("Classifying reads in `{}`", reads_file);
     writeln!(
         writer,
         "ID\tLength\tKmers\tClassification\t{}",
@@ -97,6 +116,7 @@ fn classify_one(
 
     // Iterate through the reads
     let kmer_size = singleton_kmers.kmer_size;
+    let mut count = 0;
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
         let seq = record.normalize(false);
@@ -133,8 +153,9 @@ fn classify_one(
                 .join("\t")
         );
         writeln!(writer, "{}", to_write).unwrap();
+        count += 1;
     }
-    log::info!("Read classifications written to `{}`", output_file);
+    log::info!("Wrote {} read classifications to `{}`", count, output_file);
 
     output_file
 }
@@ -176,11 +197,14 @@ fn get_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
             .collect();
 
         let mut new_row = row.clone();
-        if kmers >= 300 && scores.iter().sum::<i32>() >= 50 && scores[1] >= 10 {
+        if kmers >= KMER_THRESHOLD
+            && scores.iter().sum::<i32>() >= SCORE_THRESHOLD
+            && scores[1] >= MINOR_SCORE_THRESHOLD
+        {
             new_row.push(format!("{}_{}", a, b));
             filtered.push(row);
         }
     }
-    log::info!("Filtered {} reads", filtered.len());
+    log::info!("Filtered {} reads from `{}`", filtered.len(), rc);
     filtered
 }
