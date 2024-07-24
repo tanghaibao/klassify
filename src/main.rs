@@ -55,6 +55,7 @@ fn main() {
                 &classify.bincode_file,
                 &classify.reads_file,
                 &classify.output_dir,
+                classify.prefix_length,
             );
         }
         SubCommand::Info(info) => {
