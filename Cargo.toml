@@ -8,6 +8,7 @@ bincode = "*"
 clap = { version = "*", features = ["derive"] }
 csv = "*"
 env_logger = "*"
+flate2 = "*"
 libc = "*"
 log = "*"
 needletail = "*"

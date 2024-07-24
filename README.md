@@ -75,5 +75,4 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
 
 ```console
 klassify regions f1_classify.bam parent_classify.bam
-python scripts/generate_regions.py f1_classify.bam parent_classify.bam
 ```

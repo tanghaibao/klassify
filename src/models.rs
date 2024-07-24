@@ -1,4 +1,6 @@
+use log;
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -84,4 +86,27 @@ pub fn sh(command: &str) -> bool {
         .status()
         .expect("failed to execute process");
     status.success()
+}
+
+fn is_newer_file(a: &str, b: &str) -> bool {
+    let a_modified = fs::metadata(a).and_then(|m| m.modified()).ok();
+    let b_modified = fs::metadata(b).and_then(|m| m.modified()).ok();
+
+    match (a_modified, b_modified) {
+        (Some(a_time), Some(b_time)) => a_time > b_time,
+        _ => false,
+    }
+}
+
+pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
+    let should_update = b.iter().any(|x| !Path::new(x).exists())
+        || b.iter()
+            .all(|x| fs::metadata(x).map(|m| m.len() == 0).unwrap_or(false))
+        || a.iter().any(|x| b.iter().any(|y| is_newer_file(x, y)));
+
+    if !should_update && warn {
+        log::info!("File `{}` found. Computation skipped.", b.join(", "));
+    }
+
+    should_update
 }
