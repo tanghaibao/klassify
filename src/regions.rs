@@ -148,13 +148,15 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
         let chrom_selected: Vec<_> = data
             .iter()
             .filter(|&&(_, _, depth)| depth >= 5.0 && depth <= 100.0)
-            .map(|&(start, end, depth)| (chrom.clone(), start, end, depth.round() as i32))
+            .map(|&(start, end, depth)| (chrom.clone(), start, end, format!("{}", depth.round())))
             .collect();
 
         selected.extend_from_slice(&chrom_selected);
         let regions_str = chrom_selected
             .iter()
-            .map(|&(ref chrom, start, end, depth)| format!("{}:{}-{}:{}", chrom, start, end, depth))
+            .map(|(chrom, start, end, depth)| {
+                format!("{}:{}-{}:{}", chrom, start, end, depth.clone())
+            })
             .collect::<Vec<_>>()
             .join(",");
 
@@ -193,7 +195,7 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
 
         if prev.0 == cur.0 && prev.2 + CHAIN_DISTANCE >= cur.1 {
             prev.2 = std::cmp::max(prev.2, cur.2);
-            // prev.3 = format!("{},{}", prev.3, cur.3);
+            prev.3 = format!("{},{}", prev.3, cur.3);
         } else {
             merged.push(cur.clone());
         }
