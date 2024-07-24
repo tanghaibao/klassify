@@ -10,7 +10,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 /// Discrete bin size to contract regions
-const BINSIZE: u32 = 1000;
+const BINSIZE: u32 = 10_000;
 /// Chain distance to merge regions
 const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 
@@ -197,7 +197,7 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
         let cur = &selected[i];
 
         if prev.0 == cur.0 && prev.2 + CHAIN_DISTANCE >= cur.1 {
-            prev.2 = std::cmp::max(prev.2, cur.2);
+            prev.2 = prev.2.max(cur.2);
             prev.3 = format!("{},{}", prev.3, cur.3);
         } else {
             merged.push(cur.clone());
