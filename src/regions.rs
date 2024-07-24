@@ -3,7 +3,6 @@ use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;
 use log;
-use rayon::prelude::*;
 use rust_htslib::bam;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
@@ -37,11 +36,17 @@ impl BedRecord {
 
 /// Prepare BAM files and generate depths for each bin
 pub fn regions(bam_files: &Vec<String>) {
-    let bed_files = bam_files
-        .par_iter()
-        .map(|bam_file| regions_one(bam_file))
-        .collect();
+    let mut bed_files = Vec::new();
+    for bam_file in bam_files {
+        let bed_file = if bam_file.ends_with(".bam") {
+            regions_one(bam_file)
+        } else {
+            bam_file.clone()
+        };
+        bed_files.push(bed_file);
+    }
 
+    // Perform the depth analysis
     process_bedfiles(bed_files);
 }
 
