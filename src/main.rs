@@ -75,7 +75,7 @@ fn main() {
             extract_bam::extract_bam(&extract_bam.regions_file, &extract_bam.bam_file);
         }
         SubCommand::Regions(regions) => {
-            regions::regions(&regions.bam_files);
+            regions::regions(&regions.bam_files, !regions.no_chr_only);
         }
     }
 }

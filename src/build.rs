@@ -9,7 +9,9 @@ use std::{
     io::BufWriter,
 };
 
+/// K-mer length
 const KMER_SIZE: u8 = 24;
+/// File name for singleton kmers
 const SINGLETON_KMERS: &str = "kmers.bc";
 
 #[derive(Parser, Debug)]

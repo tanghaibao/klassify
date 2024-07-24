@@ -10,7 +10,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 /// Discrete bin size to contract regions
-const BINSIZE: u32 = 1000;
+const BINSIZE: u32 = 10_000;
 /// Chain distance to merge regions
 const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 
@@ -18,6 +18,9 @@ const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 pub struct RegionsArgs {
     /// BAM files
     pub bam_files: Vec<String>,
+    /// Retain only chimeras between chromosomes, must contain "Chr" and "chr"
+    #[clap(short, long, default_value_t = false)]
+    pub no_chr_only: bool,
 }
 
 #[derive(Debug)]
@@ -40,7 +43,7 @@ impl BedRecord {
 }
 
 /// Prepare BAM files and generate depths for each bin
-pub fn regions(bam_files: &Vec<String>) {
+pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
     let mut bed_files = Vec::new();
     for bam_file in bam_files {
         let bed_file = if bam_file.ends_with(".bam") {
@@ -52,7 +55,7 @@ pub fn regions(bam_files: &Vec<String>) {
     }
 
     // Perform the depth analysis
-    process_bedfiles(bed_files);
+    process_bedfiles(bed_files, chr_only);
 }
 
 /// Prepare one BAM file and generate depths for each bin
@@ -99,7 +102,7 @@ fn load_bed(bed: &str) -> Vec<BedRecord> {
 }
 
 /// Process F1 and parent BED files to generate candidate regions.
-fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
+fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i32> {
     let child_bed = &bed_files[0];
     let parent1_bed = &bed_files[1];
     let parent2_bed = if bed_files.len() == 3 {
@@ -139,7 +142,7 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
     let mut selected = Vec::new();
 
     for (chrom, data) in &mut regions {
-        if !chrom.contains("Chr") {
+        if chr_only && !chrom.contains("Chr") && !chrom.contains("chr") {
             continue;
         }
 
@@ -148,13 +151,15 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
         let chrom_selected: Vec<_> = data
             .iter()
             .filter(|&&(_, _, depth)| depth >= 5.0 && depth <= 100.0)
-            .map(|&(start, end, depth)| (chrom.clone(), start, end, depth.round() as i32))
+            .map(|&(start, end, depth)| (chrom.clone(), start, end, format!("{}", depth.round())))
             .collect();
 
         selected.extend_from_slice(&chrom_selected);
         let regions_str = chrom_selected
             .iter()
-            .map(|&(ref chrom, start, end, depth)| format!("{}:{}-{}:{}", chrom, start, end, depth))
+            .map(|(chrom, start, end, depth)| {
+                format!("{}:{}-{}:{}", chrom, start, end, depth.clone())
+            })
             .collect::<Vec<_>>()
             .join(",");
 
@@ -192,8 +197,8 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
         let cur = &selected[i];
 
         if prev.0 == cur.0 && prev.2 + CHAIN_DISTANCE >= cur.1 {
-            prev.2 = std::cmp::max(prev.2, cur.2);
-            // prev.3 = format!("{},{}", prev.3, cur.3);
+            prev.2 = prev.2.max(cur.2);
+            prev.3 = format!("{},{}", prev.3, cur.3);
         } else {
             merged.push(cur.clone());
         }

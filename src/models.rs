@@ -11,6 +11,7 @@ pub struct SingletonKmers {
 }
 
 impl SingletonKmers {
+    #[inline]
     pub fn n(&self) -> usize {
         self.fasta_files.len()
     }
@@ -88,6 +89,7 @@ pub fn sh(command: &str) -> bool {
     status.success()
 }
 
+/// Determine if file a is newer than file b
 fn is_newer_file(a: &str, b: &str) -> bool {
     let a_modified = fs::metadata(a).and_then(|m| m.modified()).ok();
     let b_modified = fs::metadata(b).and_then(|m| m.modified()).ok();
@@ -98,6 +100,7 @@ fn is_newer_file(a: &str, b: &str) -> bool {
     }
 }
 
+/// Check if any file in list a is newer than file in list b
 pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x).exists())
         || b.iter()
