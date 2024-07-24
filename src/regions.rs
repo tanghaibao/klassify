@@ -9,6 +9,11 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
+/// Discrete bin size to contract regions
+const BINSIZE: u32 = 1000;
+/// Chain distance to merge regions
+const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
+
 #[derive(Parser, Debug)]
 pub struct RegionsArgs {
     /// BAM files
@@ -59,7 +64,10 @@ fn regions_one(bam_file: &str) -> String {
         log::info!("Built index for `{}`", bam_file);
     }
     let mosdepth_out = prefix_until_dot(bam_file) + ".mosdepth";
-    let mosdepth_cmd = format!("mosdepth -t 8 -n --by 10000 {} {}", mosdepth_out, bam_file);
+    let mosdepth_cmd = format!(
+        "mosdepth -t 8 -n --by {} {} {}",
+        BINSIZE, mosdepth_out, bam_file
+    );
     let mosdepth_bed = mosdepth_out.to_string() + ".regions.bed.gz";
     if need_update(
         vec![bam_file.to_string()],
@@ -183,7 +191,7 @@ fn process_bedfiles(bed_files: Vec<String>) -> HashMap<String, i32> {
         let prev = merged.last_mut().unwrap();
         let cur = &selected[i];
 
-        if prev.0 == cur.0 && prev.2 + 20000 >= cur.1 {
+        if prev.0 == cur.0 && prev.2 + CHAIN_DISTANCE >= cur.1 {
             prev.2 = std::cmp::max(prev.2, cur.2);
             // prev.3 = format!("{},{}", prev.3, cur.3);
         } else {
