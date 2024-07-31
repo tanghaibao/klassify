@@ -11,7 +11,7 @@ breakpoint locations.
 The breakpoints can be due to:
 
 - Recombination / crossover events
-- Structrual variations
+- Structural variations
 
 While there are many tools that can identify structural variations, this tool
 is designed to compare progeny (e.g. F1) reads to the parental genome. The key
@@ -47,7 +47,7 @@ klassify build ref/*.fa -o kmers.bc
 
 This generates an index for all the unique kmers (present in a single contig/chromosome).
 
-1. Classify the progeny (e.g. F1) reads based on the unique kmers
+2. Classify the progeny (e.g. F1) reads based on the unique kmers
 
 ```console
 mkdir f1_reads f1_classify
