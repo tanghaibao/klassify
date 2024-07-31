@@ -1,5 +1,8 @@
 # klassify
 
+[![Crates.io](https://img.shields.io/crates/v/klassify.svg)](https://crates.io/crates/klassify)
+[![Github Actions](https://github.com/tanghaibao/klassify/workflows/build/badge.svg)](https://github.com/tanghaibao/klassify/actions)
+
 ![klassify-logo](https://www.dropbox.com/scl/fi/bjvfamep0aoxka0dcg2zi/klassify-logo.png?rlkey=8vmvacehs2amuaoi0gvgyh28r&st=ohygf458&raw=1)
 
 Classify chimeric reads based on unique kmer contents and identify the
@@ -23,7 +26,7 @@ Following are examples of recominant reads identified by this tool:
 ## Installation
 
 ```bash
-cargo install --path .
+cargo install klassify
 ```
 
 ## Usage
