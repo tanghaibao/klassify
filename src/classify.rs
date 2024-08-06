@@ -100,9 +100,10 @@ pub fn classify(
         output_path,
     );
     log::info!(
-        "Filter rules: unique kmer ≧ {}, A unique + B unique ≧ {}%)",
+        "Filter rules: unique kmer ≧ {}, A unique + B unique ≧ {}%, B unique ≧ {}%",
         KMER_THRESHOLD,
         SCORE_THRESHOLD,
+        MINOR_SCORE_THRESHOLD
     );
 }
 
