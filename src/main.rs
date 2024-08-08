@@ -72,7 +72,11 @@ fn main() {
             );
         }
         SubCommand::ExtractBam(extract_bam) => {
-            extract_bam::extract_bam(&extract_bam.regions_file, &extract_bam.bam_file);
+            extract_bam::extract_bam(
+                &extract_bam.regions_file,
+                &extract_bam.bam_file,
+                extract_bam.flank_size,
+            );
         }
         SubCommand::Regions(regions) => {
             regions::regions(&regions.bam_files, !regions.no_chr_only);

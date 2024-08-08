@@ -1,4 +1,4 @@
-use crate::models::{need_update, prefix_until_dot, sh};
+use crate::models::{need_update, prefix_until_dot, sh, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;
@@ -8,11 +8,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
-
-/// Discrete bin size to contract regions
-const BINSIZE: u32 = 10_000;
-/// Chain distance to merge regions
-const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 
 #[derive(Parser, Debug)]
 pub struct RegionsArgs {

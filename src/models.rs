@@ -3,6 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+/// Discrete bin size to contract regions
+pub const BINSIZE: u32 = 10_000;
+/// Chain distance to merge regions
+pub const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
+/// Flank size to extract from the region
+pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
+
 #[derive(Serialize, Deserialize)]
 pub struct SingletonKmers {
     pub kmer_size: u8,

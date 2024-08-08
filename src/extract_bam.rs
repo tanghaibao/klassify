@@ -1,3 +1,4 @@
+use crate::models::DEFAULT_FLANK_SIZE;
 use clap::Parser;
 use log;
 use rust_htslib::bam::{IndexedReader, Read};
@@ -12,10 +13,13 @@ pub struct ExtractBamArgs {
     pub regions_file: String,
     /// BAM file to extract reads
     pub bam_file: String,
+    /// Flank size to extract from the region
+    #[clap(short, long, default_value_t = DEFAULT_FLANK_SIZE)]
+    pub flank_size: i32,
 }
 
 /// Extract reads from a BAM file
-pub fn extract_bam(region_file: &str, bam_file: &str) {
+pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
     log::info!("Extracting reads from BAM file");
     let regions = std::fs::read_to_string(region_file).expect("valid region file");
     let regions: Vec<&str> = regions.lines().collect();
@@ -29,6 +33,8 @@ pub fn extract_bam(region_file: &str, bam_file: &str) {
         let region = region[1].split('-').collect::<Vec<&str>>();
         let start = region[0].parse::<i32>().expect("valid start position");
         let end = region[1].parse::<i32>().expect("valid end position");
+        let start = (start - flank_size).max(0);
+        let end = end + flank_size;
         let _ = bam.fetch((chrom, start, end)).expect("valid region");
         for record in bam.records() {
             let record = record.expect("valid record");
