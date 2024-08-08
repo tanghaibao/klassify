@@ -1,3 +1,5 @@
+import json
+import os.path as op
 import sys
 
 from dataclasses import dataclass
@@ -6,7 +8,14 @@ from typing import List
 from jcvi.apps.base import logger, sh
 
 
-FLANKING = 10000
+FLANKING = 50000
+TRACK_CONFIG = {
+    "type": "alignment",
+    "hideSmallIndels": True,
+    "indelSizeThreshold": 2,
+    "height": 250,
+    # "displayMode": "SQUISHED",
+}
 
 
 @dataclass
@@ -27,16 +36,14 @@ class Region:
         """
         chrom, start_end = region.split(":")
         start, end = start_end.split("-")
-        return cls(chrom, int(start), int(end), region)
-
-    def __str__(self):
-        return f"{self.chrom}:{self.start}-{self.end}"
+        return cls(chrom, int(start) - 1, int(end), region)
 
 
 def main(regions_file: str, genome_fasta: str, *bam_files: List[str]):
     """
     Generate an IGV report from a list of regions.
     """
+    prefix = regions_file.rsplit(".", 1)[0]
     regions = []
     with open(regions_file, "r", encoding="utf-8") as f:
         for row in f:
@@ -44,19 +51,31 @@ def main(regions_file: str, genome_fasta: str, *bam_files: List[str]):
             regions.append(Region.from_str(region))
 
     # Make a BED file
-    bed_file = regions_file.rsplit(".", 1)[0] + ".bed"
+    bed_file = prefix + ".bed"
     with open(bed_file, "w", encoding="utf-8") as f:
-        for region in regions:
+        for region in regions[:10]:
             f.write(f"{region.chrom}\t{region.start}\t{region.end}\t{region.name}\n")
     logger.info("Generated BED file: %s", bed_file)
 
+    # Write track configuration
+    track_config = prefix + ".track_config.json"
+    all_tracks = []
+    for bam_file in bam_files:
+        track = TRACK_CONFIG.copy()
+        track["name"] = op.basename(bam_file)
+        track["url"] = bam_file
+        all_tracks.append(track)
+    with open(track_config, "w", encoding="utf-8") as f:
+        f.write(json.dumps(all_tracks, indent=4))
+    logger.info("Generated track configuration: %s", track_config)
+
     # Call create_report
     logger.info("Creating report for %s...", regions_file)
-    html_file = regions_file.rsplit(".", 1)[0] + ".html"
+    html_file = prefix + ".html"
     cmd = f"create_report {bed_file}"
     cmd += f" --fasta {genome_fasta}"
     cmd += f" --flanking {FLANKING}"
-    cmd += f" --tracks {' '.join(bam_files)}"
+    cmd += f" --track-config {track_config}"
     cmd += f" --output {html_file}"
     sh(cmd)
 
