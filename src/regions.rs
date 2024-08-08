@@ -18,7 +18,7 @@ const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 pub struct RegionsArgs {
     /// BAM files
     pub bam_files: Vec<String>,
-    /// Retain only chimeras between chromosomes, must contain "Chr" and "chr"
+    /// Do not limit chimeras between chromosomes only, e.g. must contain "Chr" and "chr"
     #[clap(short, long, default_value_t = false)]
     pub no_chr_only: bool,
 }
