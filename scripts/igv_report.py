@@ -53,7 +53,7 @@ def main(regions_file: str, genome_fasta: str, *bam_files: List[str]):
     # Make a BED file
     bed_file = prefix + ".bed"
     with open(bed_file, "w", encoding="utf-8") as f:
-        for region in regions[:10]:
+        for region in regions:
             f.write(f"{region.chrom}\t{region.start}\t{region.end}\t{region.name}\n")
     logger.info("Generated BED file: %s", bed_file)
 
