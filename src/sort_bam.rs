@@ -21,7 +21,7 @@ pub struct SortBamArgs {
 /// Sort a BAM file by divergence
 pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32) {
     let n_threads = num_cpus::get();
-    let n_threads_read = n_threads * 4 / 5;
+    let n_threads_read = n_threads * 2 / 3;
     let n_threads_write = n_threads - n_threads_read;
     let mut bam = bam::Reader::from_path(input_bam).unwrap();
     bam.set_threads(n_threads).unwrap();
@@ -33,7 +33,7 @@ pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32) {
     );
     let header = bam::Header::from_template(bam.header());
     let mut out_bam = bam::Writer::from_path(output_bam, &header, bam::Format::Bam).unwrap();
-    out_bam.set_threads(0).unwrap();
+    out_bam.set_threads(n_threads_write).unwrap();
     let mut total_reads = 0;
     let mut retained_reads = 0;
     for r in bam.records() {
