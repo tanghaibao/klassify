@@ -8,6 +8,7 @@ use klassify::extract;
 use klassify::extract_bam;
 use klassify::info;
 use klassify::regions;
+use klassify::sort_bam;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
@@ -32,6 +33,8 @@ enum SubCommand {
     ExtractBam(extract_bam::ExtractBamArgs),
     #[clap(about = "Prepare BAM files and generate depths for each bin")]
     Regions(regions::RegionsArgs),
+    #[clap(about = "Sort BAM file by divergence")]
+    SortBam(sort_bam::SortBamArgs),
 }
 
 fn main() {
@@ -80,6 +83,9 @@ fn main() {
         }
         SubCommand::Regions(regions) => {
             regions::regions(&regions.bam_files, !regions.no_chr_only);
+        }
+        SubCommand::SortBam(sort_bam) => {
+            sort_bam::sort_bam(&sort_bam.input, &sort_bam.output, sort_bam.max_de);
         }
     }
 }
