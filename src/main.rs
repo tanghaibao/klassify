@@ -7,6 +7,7 @@ use klassify::classify;
 use klassify::extract;
 use klassify::extract_bam;
 use klassify::info;
+use klassify::longest_repeated_substring;
 use klassify::regions;
 
 #[derive(Parser, Debug)]
@@ -32,6 +33,8 @@ enum SubCommand {
     ExtractBam(extract_bam::ExtractBamArgs),
     #[clap(about = "Prepare BAM files and generate depths for each bin")]
     Regions(regions::RegionsArgs),
+    #[clap(about = "Find the longest repeated substring")]
+    LongestRepeatedSubstring(longest_repeated_substring::LongestRepeatedSubstringArgs),
 }
 
 fn main() {
@@ -76,6 +79,12 @@ fn main() {
                 &extract_bam.regions_file,
                 &extract_bam.bam_file,
                 extract_bam.flank_size,
+            );
+        }
+        SubCommand::LongestRepeatedSubstring(longest_repeated_substring) => {
+            longest_repeated_substring::longest_repeated_substring(
+                &longest_repeated_substring.fasta_file,
+                longest_repeated_substring.min_length,
             );
         }
         SubCommand::Regions(regions) => {

@@ -9,6 +9,8 @@ pub const BINSIZE: u32 = 10_000;
 pub const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 /// Flank size to extract from the region
 pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
+/// Minimum length of the repeated substring
+pub const DEFAULT_MIN_REPEAT_LENGTH: isize = 1_000_000;
 
 #[derive(Serialize, Deserialize)]
 pub struct SingletonKmers {
