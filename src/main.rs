@@ -85,7 +85,12 @@ fn main() {
             regions::regions(&regions.bam_files, !regions.no_chr_only);
         }
         SubCommand::SortBam(sort_bam) => {
-            sort_bam::sort_bam(&sort_bam.input, &sort_bam.output, sort_bam.max_de);
+            sort_bam::sort_bam(
+                &sort_bam.input,
+                &sort_bam.output,
+                sort_bam.max_de,
+                sort_bam.min_mapq,
+            );
         }
     }
 }

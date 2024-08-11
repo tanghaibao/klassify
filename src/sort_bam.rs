@@ -14,12 +14,15 @@ pub struct SortBamArgs {
     #[clap(short, long)]
     pub output: String,
     /// Maximum divergence
-    #[clap(short, long, default_value_t = MAX_DE)]
+    #[clap(long, default_value_t = MAX_DE)]
     pub max_de: f32,
+    /// Minimum MAPQ
+    #[clap(long, default_value_t = 0)]
+    pub min_mapq: u8,
 }
 
 /// Sort a BAM file by divergence
-pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32) {
+pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32, min_mapq: u8) {
     let n_threads = num_cpus::get();
     let n_threads_read = n_threads * 2 / 3;
     let n_threads_write = n_threads - n_threads_read;
@@ -47,6 +50,9 @@ pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32) {
             );
         }
         let rec = r.unwrap();
+        if min_mapq > 0 && rec.mapq() < min_mapq {
+            continue;
+        }
         let aux_cb = rec.aux(b"de").ok();
         if aux_cb.is_none() {
             continue;
