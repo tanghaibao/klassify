@@ -6,16 +6,16 @@ use log;
 use needletail::{parse_fastx_file, Sequence};
 
 #[derive(Parser, Debug)]
-pub struct LongestRepeatedSubstringArgs {
+pub struct LongestRepeatArgs {
     /// FASTA file to extract reads
     pub fasta_file: String,
     /// Minimum length of the repeated substring
-    #[clap(short, long, default_value_t = 30000)]
+    #[clap(short, long, default_value_t = DEFAULT_MIN_REPEAT_LENGTH)]
     pub min_length: isize,
 }
 
 /// Find the longest repeated substring in a set of sequences
-pub fn longest_repeated_substring(fasta_file: &str, min_length: isize) {
+pub fn longest_repeat(fasta_file: &str, min_length: isize) {
     let mut reader = parse_fastx_file(fasta_file).expect("valid reads file");
     let mut text = Vec::new();
     let mut seq_names = Vec::new();

@@ -4,6 +4,6 @@ pub mod classify;
 pub mod extract;
 pub mod extract_bam;
 pub mod info;
-pub mod longest_repeated_substring;
+pub mod longest_repeat;
 pub mod models;
 pub mod regions;
