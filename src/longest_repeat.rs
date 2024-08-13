@@ -4,6 +4,7 @@ use bio::data_structures::suffix_array::{lcp, suffix_array};
 use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
+use std::fmt::Display;
 
 const TERMINATOR: u8 = b'$';
 
@@ -21,6 +22,12 @@ struct SeqRange {
     name: String,
     start: usize,
     end: usize,
+}
+
+impl Display for SeqRange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}-{}", self.name, self.start, self.end)
+    }
 }
 
 /// Container for multiple sequences, concatenated together
@@ -101,15 +108,7 @@ pub fn longest_repeat(fasta_file: &str, min_length: isize) {
         }
         let seqrange = seqrange.unwrap();
         let next_seqrange = next_seqrange.unwrap();
-        println!(
-            "{}:{}-{} => {}:{}-{}",
-            seqrange.name,
-            seqrange.start,
-            seqrange.end,
-            next_seqrange.name,
-            next_seqrange.start,
-            next_seqrange.end
-        );
+        println!("{} => {}", seqrange, next_seqrange);
         println!(
             "lcp={} => {} … {} {} … {}",
             lc,
