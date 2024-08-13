@@ -6,6 +6,7 @@ use klassify::classify;
 use klassify::extract;
 use klassify::extract_bam;
 use klassify::info;
+use klassify::longest_repeat;
 use klassify::regions;
 use klassify::sort_bam;
 
@@ -32,6 +33,8 @@ enum SubCommand {
     Regions(regions::RegionsArgs),
     #[clap(about = "Sort BAM file by divergence")]
     SortBam(sort_bam::SortBamArgs),
+    #[clap(about = "Find the longest repeated substring")]
+    LongestRepeat(longest_repeat::LongestRepeatArgs),
 }
 
 fn main() {
@@ -73,6 +76,12 @@ fn main() {
                 &extract_bam.regions_file,
                 &extract_bam.bam_file,
                 extract_bam.flank_size,
+            );
+        }
+        SubCommand::LongestRepeat(longest_repeated_substring) => {
+            longest_repeat::longest_repeat(
+                &longest_repeated_substring.fasta_file,
+                longest_repeated_substring.min_length,
             );
         }
         SubCommand::Regions(regions) => {

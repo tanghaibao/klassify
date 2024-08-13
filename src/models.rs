@@ -11,6 +11,8 @@ pub const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
 pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
 /// Maximum divergence
 pub const MAX_DE: f32 = 0.01; // 1%
+/// Minimum length of the repeated substring
+pub const DEFAULT_MIN_REPEAT_LENGTH: isize = 30_000;
 
 #[derive(Serialize, Deserialize)]
 pub struct SingletonKmers {
