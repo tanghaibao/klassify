@@ -97,9 +97,9 @@ pub fn longest_repeat(fasta_file: &str, min_length: isize) {
         if lc < min_length {
             continue;
         }
-        let start = sa[index];
+        let start = sa[index - 1];
         let end = start + lc as usize;
-        let next_start = sa[index + 1];
+        let next_start = sa[index];
         let next_end = next_start + lc as usize;
         let seqrange = ms.slice(start, end);
         let next_seqrange = ms.slice(next_start, next_end);
@@ -109,13 +109,16 @@ pub fn longest_repeat(fasta_file: &str, min_length: isize) {
         let seqrange = seqrange.unwrap();
         let next_seqrange = next_seqrange.unwrap();
         println!("{} => {}", seqrange, next_seqrange);
+        let t1: String = String::from_utf8(ms.text[start..end].to_vec()).unwrap();
+        let t2 = String::from_utf8(ms.text[next_start..next_end].to_vec()).unwrap();
+        assert_eq!(t1, t2);
         println!(
             "lcp={} => {} … {} {} … {}",
             lc,
-            String::from_utf8(ms.text[start..start + MAX_PRINT].to_vec()).unwrap(),
-            String::from_utf8(ms.text[end - MAX_PRINT..end].to_vec()).unwrap(),
-            String::from_utf8(ms.text[next_start..next_start + MAX_PRINT].to_vec()).unwrap(),
-            String::from_utf8(ms.text[next_end - MAX_PRINT..next_end].to_vec()).unwrap()
+            t1[..MAX_PRINT].to_string(),
+            t1[t1.len() - MAX_PRINT..].to_string(),
+            t2[..MAX_PRINT].to_string(),
+            t2[t2.len() - MAX_PRINT..].to_string()
         );
     }
 }
