@@ -4,6 +4,9 @@ use bio::data_structures::suffix_array::{lcp, suffix_array};
 use clap::Parser;
 use log;
 use needletail::{parse_fastx_file, Sequence};
+use std::collections::HashMap;
+
+const TERMINATOR: u8 = b'$';
 
 #[derive(Parser, Debug)]
 pub struct LongestRepeatArgs {
@@ -14,37 +17,39 @@ pub struct LongestRepeatArgs {
     pub min_length: isize,
 }
 
+/// Mark the start and stop for a sequence within the concatenated text
+struct Seq {
+    start: usize,
+    size: usize,
+}
+
 /// Container for multiple sequences, concatenated together
 struct MultiSequence {
     text: Vec<u8>,
-    names: Vec<String>,
-    starts: Vec<usize>,
-    sizes: Vec<usize>,
+    seqs: HashMap<String, Seq>,
 }
 
 /// Find the longest repeated substring in a set of sequences
 pub fn longest_repeat(fasta_file: &str, min_length: isize) {
     let mut reader = parse_fastx_file(fasta_file).expect("valid reads file");
     let mut text = Vec::new();
-    let mut names = Vec::new();
-    let mut starts = Vec::new();
-    let mut sizes: Vec<usize> = Vec::new();
+    let mut seqs = HashMap::new();
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
         let seq = record.normalize(false);
-        names.push(String::from_utf8(record.id().to_vec()).unwrap());
-        sizes.push(seq.len());
-        starts.push(text.len());
+        let name = String::from_utf8(record.id().to_vec()).unwrap();
+        seqs.insert(
+            name,
+            Seq {
+                start: text.len(),
+                size: seq.len(),
+            },
+        );
         text.extend(seq.into_owned());
-        text.push(b'$');
+        text.push(TERMINATOR);
     }
-    let ms = MultiSequence {
-        text,
-        names,
-        starts,
-        sizes,
-    };
-    log::info!("Read {} sequences from FASTA file", ms.starts.len());
+    let ms = MultiSequence { text, seqs };
+    log::info!("Read {} sequences from FASTA file", ms.seqs.len());
 
     let sa = suffix_array(&ms.text);
     log::info!("Computed suffix array: {}", sa.len());
