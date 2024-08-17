@@ -1,6 +1,7 @@
 use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
+use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
 use klassify::extract;
@@ -18,6 +19,8 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum SubCommand {
+    #[clap(about = "Detect breakpoints")]
+    Breakpoint(breakpoint::BreakpointArgs),
     #[clap(about = "Build reference kmer table")]
     Build(build::BuildArgs),
     #[clap(about = "Classify reads")]
@@ -49,6 +52,9 @@ fn main() {
     match args.subcommand {
         SubCommand::Build(build) => {
             build::build(&build.fasta_files, &build.output_file, build.kmer_size);
+        }
+        SubCommand::Breakpoint(breakpoint) => {
+            breakpoint::breakpoint(&breakpoint.bincode_file, &breakpoint.fasta_files);
         }
         SubCommand::Classify(classify) => {
             classify::classify(
