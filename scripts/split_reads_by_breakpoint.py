@@ -15,7 +15,7 @@ SUCCESS, FAIL, NOT_ENOUGH_KMERS = "SUCCESS", "FAIL", "NOT_ENOUGH_KMERS"
 KMER_THRESHOLD = 30
 
 
-def main(args):
+def main(args: List[str]):
     p = OptionParser(main.__doc__)
     _, args = p.parse_args(args)
     if len(args) != 2:
