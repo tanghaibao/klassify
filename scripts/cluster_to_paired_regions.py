@@ -52,8 +52,8 @@ def main(args: List[str]):
         else:
             merged.append([b])
 
-    region_to_reads = defaultdict(list)
     read_to_regions = defaultdict(list)
+    read_to_subreads = defaultdict(set)
     for mb in merged:
         if len(mb) < MIN_READ_SUPPORT:
             continue
@@ -61,9 +61,9 @@ def main(args: List[str]):
         mb_end = int(np.median([b.end for b in mb]))
         region_name = f"{mb[0].seqid}:{mb_start}-{mb_end}"
         for b in mb:
-            region_to_reads[region_name].append(b.accn)
             read_name = b.accn.split("|", 1)[0]
             read_to_regions[read_name].append(region_name)
+            read_to_subreads[read_name].add(b.accn)
 
     pair_to_reads = defaultdict(list)
     for read, regions in read_to_regions.items():
@@ -76,7 +76,12 @@ def main(args: List[str]):
     valid_pairs = sorted(tuple(sorted(x)) for x in nx.max_weight_matching(G))
 
     for pair in valid_pairs:
-        print(pair, len(pair_to_reads[pair]))
+        n_reads = len(pair_to_reads[pair])
+        if n_reads < MIN_READ_SUPPORT:
+            continue
+        print(pair)
+        for read in pair_to_reads[pair]:
+            print(f"  {read_to_subreads[read]}")
 
 
 if __name__ == "__main__":
