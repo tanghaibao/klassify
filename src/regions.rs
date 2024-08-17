@@ -10,6 +10,7 @@ use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
 #[derive(Parser, Debug)]
+#[command(arg_required_else_help(true))]
 pub struct RegionsArgs {
     /// BAM files
     pub bam_files: Vec<String>,
