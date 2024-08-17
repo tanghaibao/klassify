@@ -54,6 +54,7 @@ def main(args: List[str]):
 
     read_to_regions = defaultdict(list)
     read_to_subreads = defaultdict(set)
+    read_to_match = {}
     for mb in merged:
         if len(mb) < MIN_READ_SUPPORT:
             continue
@@ -64,6 +65,7 @@ def main(args: List[str]):
             read_name = b.accn.split("|", 1)[0]
             read_to_regions[read_name].append(region_name)
             read_to_subreads[read_name].add((b.accn, b.strand))
+            read_to_match[b.accn] = f"{b.seqid}:{b.start}-{b.end}:{b.strand}"
 
     pair_to_reads = defaultdict(list)
     for read, regions in read_to_regions.items():
@@ -99,9 +101,33 @@ def main(args: List[str]):
         if not ra.startswith(ra_reordered):
             ra, rb = rb, ra
         assert ra.startswith(ra_reordered) and rb.startswith(rb_reordered)
-        print(ra, rb)
-        print(filtered_reads)
         filtered_pair_to_reads[(ra, rb)] = filtered_reads
+
+    # Finally, write out the paired regions
+    header = [
+        "Crossover ID",
+        "Left",
+        "Right",
+        "Read Count",
+        "Read ID",
+        "Read Left",
+        "Read Left Match",
+        "Read Right",
+        "Read Right Match",
+    ]
+    print("\t".join(header))
+    for cid, ((ra, rb), reads) in enumerate(sorted(filtered_pair_to_reads.items())):
+        cid += 1
+        for i, read in enumerate(reads):
+            row = [cid, "", "", ""] if i > 0 else [cid, ra, rb, len(reads)]
+            row += [
+                read[0].split("|")[0],
+                read[0].split("|")[2],
+                read_to_match[read[0]],
+                read[1].split("|")[2],
+                read_to_match[read[1]],
+            ]
+            print("\t".join(str(x) for x in row))
 
 
 if __name__ == "__main__":
