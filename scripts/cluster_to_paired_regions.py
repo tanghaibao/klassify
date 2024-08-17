@@ -63,7 +63,7 @@ def main(args: List[str]):
         for b in mb:
             read_name = b.accn.split("|", 1)[0]
             read_to_regions[read_name].append(region_name)
-            read_to_subreads[read_name].add(b.accn)
+            read_to_subreads[read_name].add((b.accn, b.strand))
 
     pair_to_reads = defaultdict(list)
     for read, regions in read_to_regions.items():
@@ -75,13 +75,33 @@ def main(args: List[str]):
         G.add_edge(*pair, weight=len(reads))
     valid_pairs = sorted(tuple(sorted(x)) for x in nx.max_weight_matching(G))
 
+    filtered_pair_to_reads = {}
     for pair in valid_pairs:
         n_reads = len(pair_to_reads[pair])
         if n_reads < MIN_READ_SUPPORT:
             continue
-        print(pair)
+        counter = Counter()
+        filtered_reads = []
         for read in pair_to_reads[pair]:
-            print(f"  {read_to_subreads[read]}")
+            (fa, _), (fb, _) = read_to_subreads[read]
+            # Check if the subread is out of order
+            fa_read, fa_seqid, fa_range = fa.split("|")
+            fb_read, fb_seqid, fb_range = fb.split("|")
+            assert fa_read == fb_read
+            if fb_range.startswith("0-"):
+                assert not fa_range.endswith("0-")
+                fa, fb = fb, fa
+                fa_seqid, fb_seqid = fb_seqid, fa_seqid
+            counter[(fa_seqid, fb_seqid)] += 1
+            filtered_reads.append((fa, fb))
+        (ra_reordered, rb_reordered), _ = tuple(counter.most_common(1)[0])
+        ra, rb = pair
+        if not ra.startswith(ra_reordered):
+            ra, rb = rb, ra
+        assert ra.startswith(ra_reordered) and rb.startswith(rb_reordered)
+        print(ra, rb)
+        print(filtered_reads)
+        filtered_pair_to_reads[(ra, rb)] = filtered_reads
 
 
 if __name__ == "__main__":
