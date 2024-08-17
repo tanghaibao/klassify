@@ -11,7 +11,8 @@ from jcvi.formats.bed import Bed, BedLine
 from jcvi.formats.fasta import Fasta
 
 
-SUCCESS, FAIL = "SUCCESS", "FAIL"
+SUCCESS, FAIL, NOT_ENOUGH_KMERS = "SUCCESS", "FAIL", "NOT_ENOUGH_KMERS"
+KMER_THRESHOLD = 30
 
 
 def main(args):
@@ -61,11 +62,20 @@ def get_breakpoint(
     ba = prefix_b + suffix_a
 
     if ab.max() > ba.max():
+        prefix, suffix = prefix_a, suffix_b
         idx = np.argmax(ab)
     else:
+        prefix, suffix = prefix_b, suffix_a
         idx = np.argmax(ba)
         ra, rb = rb, ra
 
+    count_ra = prefix[idx]
+    count_rb = suffix[idx]
+    if count_ra < KMER_THRESHOLD or count_rb < KMER_THRESHOLD:
+        logger.info(
+            "Breakpoint at `%s` has less than %d kmers. Skipped", read, KMER_THRESHOLD
+        )
+        return NOT_ENOUGH_KMERS
     left = sb[idx].end
     print(sb[idx])
     if idx == n - 1:
