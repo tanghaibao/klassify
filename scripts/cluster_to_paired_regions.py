@@ -1,3 +1,7 @@
+"""
+Cluster the reads into paired regions based on the alignment coordinates.
+"""
+
 import sys
 
 from collections import Counter, defaultdict
@@ -15,6 +19,9 @@ MIN_READ_SUPPORT = 3
 
 
 def main(args: List[str]):
+    """
+    %prog bedfile
+    """
     p = OptionParser(main.__doc__)
     _, args = p.parse_args(args)
     if len(args) != 1:
@@ -116,8 +123,11 @@ def main(args: List[str]):
         "Read Right Match",
     ]
     print("\t".join(header))
+    paired_pois = []
     for cid, ((ra, rb), reads) in enumerate(sorted(filtered_pair_to_reads.items())):
         cid += 1
+        paired_pois.append(ra)
+        paired_pois.append(rb)
         for i, read in enumerate(reads):
             row = [cid, "", "", ""] if i > 0 else [cid, ra, rb, len(reads)]
             row += [
@@ -128,6 +138,11 @@ def main(args: List[str]):
                 read_to_match[read[1]],
             ]
             print("\t".join(str(x) for x in row))
+
+    paired_poi_file = f"{bedfile}.paired.poi"
+    with open(paired_poi_file, "w", encoding="utf-8" "w") as fw:
+        fw.write("\n".join(paired_pois))
+    logger.info("Paired POIs written to `%s`", paired_poi_file)
 
 
 if __name__ == "__main__":
