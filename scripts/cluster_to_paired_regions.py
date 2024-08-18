@@ -139,10 +139,10 @@ def main(args: List[str]):
             ]
             print("\t".join(str(x) for x in row))
 
-    paired_poi_file = f"{bedfile.split('.', 1)[0]}.paired.poi"
-    with open(paired_poi_file, "w", encoding="utf-8") as fw:
+    paired_regions_file = f"{bedfile.split('.', 1)[0]}.paired.regions"
+    with open(paired_regions_file, "w", encoding="utf-8") as fw:
         fw.write("\n".join(paired_pois))
-    logger.info("Paired POIs written to `%s`", paired_poi_file)
+    logger.info("Paired regions written to `%s`", paired_regions_file)
 
 
 if __name__ == "__main__":
