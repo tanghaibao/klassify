@@ -142,6 +142,7 @@ def main(args: List[str]):
     paired_regions_file = f"{bedfile.split('.', 1)[0]}.paired.regions"
     with open(paired_regions_file, "w", encoding="utf-8") as fw:
         fw.write("\n".join(paired_pois))
+        fw.write("\n")
     logger.info("Paired regions written to `%s`", paired_regions_file)
 
 
