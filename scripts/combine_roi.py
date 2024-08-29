@@ -13,7 +13,7 @@ def main(args: List[str]):
         print("Usage: python combine_roi.py <roi1.bed> <roi2.bed> ...")
         sys.exit(1)
 
-    logger.info(f"Combining %d ROIs", len(args))
+    logger.info("Combining %d ROIs", len(args))
 
     rois = []
     for arg in args:
@@ -26,7 +26,9 @@ def main(args: List[str]):
         rois.append(df)
 
     df = pd.concat(rois)
-    df.to_csv("combined-roi-with-reads.tsv", sep="\t", header=True, index=False)
+    combined_roi_with_reads = "combined-roi-with-reads.tsv"
+    df.to_csv(combined_roi_with_reads, sep="\t", header=True, index=False)
+    logger.info("Combined ROIs with reads written to `%s`", combined_roi_with_reads)
     df_no_reads = df.dropna(subset=["Left"])
     combined_roi = "combined-roi.tsv"
     df_no_reads.to_csv(combined_roi, sep="\t", header=True, index=False)
