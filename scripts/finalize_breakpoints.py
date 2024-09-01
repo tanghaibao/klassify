@@ -89,7 +89,7 @@ def main(args: List[str]):
     roi = []
     for _, row in df.iterrows():
         accession, _ = row["Crossover ID"].split("-", 1)
-        accession_bed_gz = f"10-{accession}aln.regions.bed.gz"
+        accession_bed_gz = f"{accession}Aln2ParentsHiFi_2024.regions.bed.gz"
         roi += [
             {
                 "Accession": accession_bed_gz,
@@ -103,7 +103,7 @@ def main(args: List[str]):
             },
         ]
     roi_df = pd.DataFrame(roi)
-    roi_csv = "roi.csv"
+    roi_csv = "../mosdepth/roi.csv"
     roi_df.to_csv(roi_csv, index=False, header=None)
     logger.info("ROI table saved to `%s`", roi_csv)
 
