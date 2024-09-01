@@ -10,7 +10,7 @@ from jcvi.apps.base import logger
 
 def main(args: List[str]):
     if len(args) != 1:
-        print("Usage: finalize_breakpoints.py All-F1-Breakpoints-with-reads.xlsx")
+        print("Usage: finalize_breakpoints.py All-F1-breakpoints-with-reads-IGV.xlsx")
         sys.exit(1)
 
     (proofed_xls,) = args
@@ -38,7 +38,10 @@ def main(args: List[str]):
             continue
         accession, _ = crossover_id.split("-", 1)
         counter[(accession, gamete)] += 1
-        summary[(accession, gamete, "+".join(sorted([left_type, right_type])))] += 1
+        # summary[(accession, gamete, "+".join(sorted([left_type,
+        # right_type])))] += 1
+        summary[(accession, gamete, left_type)] += 1
+        summary[(accession, gamete, right_type)] += 1
         new_crossover_id = f"{accession}-{gamete}-{counter[(accession, gamete)]:02d}"
         old_to_new[crossover_id] = new_crossover_id
     logger.info("Removed: %s", removed)
@@ -46,9 +49,9 @@ def main(args: List[str]):
     # Update the Crossover ID
     df["Crossover ID"] = df["Crossover ID"].map(old_to_new)
     df = df[~df["Crossover ID"].isna()]
-    new_xls = proofed_xls.replace(".xlsx", "-final.xlsx")
+    new_xls = proofed_xls.replace("-IGV.xlsx", ".xlsx")
     df.to_excel(new_xls, index=False)
-    logger.info("Updated file saved to %s", new_xls)
+    logger.info("Updated file saved to `%s`", new_xls)
 
     # Save a summary table
     summary_df = []
@@ -57,14 +60,29 @@ def main(args: List[str]):
         summary_df.append(
             {
                 "F1": accession,
-                "So Type I+Type II": summary[(accession, "So", "Type I+Type II")],
-                "Ss Type I+Type I": summary[(accession, "Ss", "Type I+Type I")],
+                # "So Type I+Type II": summary[(accession, "So", "Type I+Type II")],
+                # "Ss Type I+Type I": summary[(accession, "Ss", "Type I+Type
+                # I")],
+                "So Type I": summary[(accession, "So", "Type I")],
+                "So Type II": summary[(accession, "So", "Type II")],
+                "Ss Type I": summary[(accession, "Ss", "Type I")],
+                "Ss Type II": summary[(accession, "Ss", "Type II")],
+                "Total Pairs": (
+                    counter[(accession, "So")] + counter[(accession, "Ss")]
+                ),
             }
         )
     summary_df = pd.DataFrame(summary_df)
     print(summary_df)
     summary_xls = "F1-breakpoints-summary.xlsx"
     summary_df.to_excel(summary_xls, index=False)
+    logger.info("Summary table saved to `%s`", summary_xls)
+
+    # Write a simplified crossover table without the reads
+    df = df[["Crossover ID", "Left", "Right", "Left Type", "Right Type"]]
+    simple_xls = new_xls.replace("-with-reads", "")
+    df.to_csv(simple_xls, index=False)
+    logger.info("Simplifed crossover table saved to `%s`", simple_xls)
 
 
 if __name__ == "__main__":
