@@ -80,9 +80,32 @@ def main(args: List[str]):
 
     # Write a simplified crossover table without the reads
     df = df[["Crossover ID", "Left", "Right", "Left Type", "Right Type"]]
+    df.dropna(subset=["Left", "Right"], inplace=True)
     simple_xls = new_xls.replace("-with-reads", "")
-    df.to_csv(simple_xls, index=False)
+    df.to_excel(simple_xls, index=False)
     logger.info("Simplifed crossover table saved to `%s`", simple_xls)
+
+    # make_roi.py
+    roi = []
+    for _, row in df.iterrows():
+        accession, _ = row["Crossover ID"].split("-", 1)
+        accession_bed_gz = f"10-{accession}aln.regions.bed.gz"
+        roi += [
+            {
+                "Accession": accession_bed_gz,
+                "Region": row["Left"],
+                "Type": row["Left Type"].replace("Type ", ""),
+            },
+            {
+                "Accession": accession_bed_gz,
+                "Region": row["Right"],
+                "Type": row["Right Type"].replace("Type ", ""),
+            },
+        ]
+    roi_df = pd.DataFrame(roi)
+    roi_csv = "roi.csv"
+    roi_df.to_csv(roi_csv, index=False, header=None)
+    logger.info("ROI table saved to `%s`", roi_csv)
 
 
 if __name__ == "__main__":
