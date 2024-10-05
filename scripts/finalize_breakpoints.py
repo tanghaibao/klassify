@@ -30,13 +30,13 @@ def main(args: List[str]):
         if pd.isna(left):
             continue
         gamete = left[:2]
-        if gamete == "So" and left_type == right_type:
+        accession, _ = crossover_id.split("-", 1)
+        if accession.startswith("92") and gamete == "So" and left_type == right_type:
             removed["So-Type match"] += 1
             continue
         if gamete == "Ss" and "Type II" in (left_type, right_type):
             removed["Ss-Type mismatch"] += 1
             continue
-        accession, _ = crossover_id.split("-", 1)
         counter[(accession, gamete)] += 1
         # summary[(accession, gamete, "+".join(sorted([left_type,
         # right_type])))] += 1
@@ -103,7 +103,7 @@ def main(args: List[str]):
             },
         ]
     roi_df = pd.DataFrame(roi)
-    roi_csv = "../mosdepth/roi.csv"
+    roi_csv = "roi.csv"
     roi_df.to_csv(roi_csv, index=False, header=None)
     logger.info("ROI table saved to `%s`", roi_csv)
 
