@@ -48,9 +48,9 @@ Additional dependencies include:
 
 ## Supported Operating systems
 
-We have tested latest version on the following OS:
+We have tested latest version (`0.1.4` and above) on the following OS:
 
-- Linux (Redhat)
+- Linux (Redhat Enterprise 7.6)
 
 ## Usage
 
