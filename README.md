@@ -31,7 +31,7 @@ If you don't have [Rust](https://rustup.rs/) installed:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-You can just install with `cargo`.
+With Rust installed, you can just install the software with `cargo`.
 
 ```bash
 cargo install klassify
@@ -103,15 +103,19 @@ klassify regions f1_classify.bam parent_classify.bam
 ```
 
 That's it! The breakpoint locations in the parental genomes are in
-`f1_classify.regions.tsv`, where column 2 has the depth within each 10kb bin
-around the breakpoint:
+`f1_classify.mosdepth.regions.bed.regions.tsv`, where column 2 shows the supported
+depth within each consecutive 10kb bin around the breakpoint (by default: at
+least 5 supported reads):
 
 ```console
-SoChr01A:118800000-118810000    10
-SoChr01B:43130000-43150000      8,12
+SoChr01B:70000-90000	12,5
+SoChr01F:80000-90000	11
 ```
 
-Expected run time on a desktop computer is ~1 minute.
+The breakpoint locations can then be visualized in IGV for read evidence in
+`f1_classify.bam`, using `parents.genome.fa` as the reference.
+
+Total expected run time on a desktop computer is ~1 minute.
 
 ## Algorithm
 
@@ -123,19 +127,26 @@ The KLASSIFY algorithm works as follows:
 
 1. Find unique k-mers that belong to each chromosome, e.g. SoChr01A, SoChr01B,
    etc.
+
 2. Identify ‘chimeric’ F1 reads that contain unique k-mers that belong to at
    least 2 chromosomes (default: ≧300 unique k-mers on the read, A unique + B unique
    ≧50% of unique k-mers on the read, and B unique ≧10%)
+
 3. Repeat step 2 similarly with parent reads
+
 4. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up
    with at least 5 F1 reads, but not with parent reads (therefore unaffected by
    assembly errors or repeats)
+
 5. Collect all ‘chimeric’ reads identified so far and split them into 2 parts.
    The reads are split by identifying the switch from one chromosome to another
    based on unique k-mers
+
 6. Map the split reads to the reference sequences to identify parent regions
    where each part of the ‘chimeric’ reads separately map to
+
 7. Pair the separate regions up to compile a candidate list of paired breakpoints
+
 8. Use Integrated Genome Viewer (IGV) to proof the paired breakpoints. Label the
    breakpoint as either “Type I”, “Type II”, or “bad” (see next section for
    definition of types)
