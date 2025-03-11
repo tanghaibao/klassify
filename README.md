@@ -111,6 +111,8 @@ SoChr01A:118800000-118810000    10
 SoChr01B:43130000-43150000      8,12
 ```
 
+Expected run time on a desktop computer is ~1 minute.
+
 ## Algorithm
 
 The KLASSIFY pipeline identifies the breakpoints using the set of F1 reads,
