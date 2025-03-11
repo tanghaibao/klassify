@@ -5,7 +5,7 @@
 
 ![klassify-logo](https://www.dropbox.com/scl/fi/bjvfamep0aoxka0dcg2zi/klassify-logo.png?rlkey=8vmvacehs2amuaoi0gvgyh28r&st=ohygf458&raw=1)
 
-Classify chimeric reads based on unique kmer contents and identify the
+Classify chimeric reads based on unique k-mer contents and identify the
 breakpoint locations.
 
 The breakpoints can be due to:
@@ -25,13 +25,36 @@ Following are examples of recominant reads identified by this tool:
 
 ## Installation
 
+If you don't have [Rust](https://rustup.rs/) installed:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+You can just install with `cargo`.
+
 ```bash
 cargo install klassify
 ```
 
+Typical install time on a desktop computer is ~1 minute.
+
+Additional dependencies include:
+
+- [`minimap2`](https://github.com/lh3/minimap2)
+- [`samtools`](https://github.com/samtools/samtools)
+- [`faSplit`](https://hgdownload.soe.ucsc.edu/admin/exe/)
+
+## Supported Operating systems
+
+We have tested latest version on the following OS:
+
+- macOS 15.0
+- Linux (Redhat)
+
 ## Usage
 
-Suppose you have 3 input files:
+Suppose you have 3 input files, with a toy example available in `examples`:
 
 - `parents.genome.fa`: the parental genomes
 - `f1_reads.fa`: the progeny reads
@@ -40,7 +63,8 @@ Suppose you have 3 input files:
 1. Create a database of unique kmers from the parental genomes
 
 ```console
-mkdir ref
+cd examples
+mkdir -p ref f1_reads f1_classify parent_reads parent_classify
 faSplit byname parents.genome.fa ref/
 klassify build ref/*.fa -o kmers.bc
 ```
@@ -50,7 +74,6 @@ This generates an index for all the unique kmers (present in a single contig/chr
 2. Classify the progeny (e.g. F1) reads based on the unique kmers
 
 ```console
-mkdir f1_reads f1_classify
 faSplit about f1_reads.fa 2000000000 f1_reads/
 klassify classify kmers.bc f1_reads/*.fa -o f1_classify
 ```
@@ -66,7 +89,6 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.f
 4. Repeat the steps using the parental reads
 
 ```console
-mkdir parent_reads parent_classify
 faSplit about parent_reads.fa 2000000000 parent_reads/
 klassify classify kmers.bc parent_reads/*.fa -o parent_classify
 klassify extract parent_classify.filtered.tsv parent_reads/*.fa -o parent_classify.fa
@@ -88,3 +110,30 @@ around the breakpoint:
 SoChr01A:118800000-118810000    10
 SoChr01B:43130000-43150000      8,12
 ```
+
+## Algorithm
+
+The KLASSIFY pipeline identifies the breakpoints using the set of F1 reads,
+with parent reads as control. The breakpoints identified from the F1 reads were
+then mapped back to the parent reference sequences to obtain precise coordinates.
+
+The KLASSIFY algorithm works as follows:
+
+1. Find unique k-mers that belong to each chromosome, e.g. SoChr01A, SoChr01B,
+   etc.
+2. Identify ‘chimeric’ F1 reads that contain unique k-mers that belong to at
+   least 2 chromosomes (default: ≧300 unique k-mers on the read, A unique + B unique
+   ≧50% of unique k-mers on the read, and B unique ≧10%)
+3. Repeat step 2 similarly with parent reads
+4. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up
+   with at least 5 F1 reads, but not with parent reads (therefore unaffected by
+   assembly errors or repeats)
+5. Collect all ‘chimeric’ reads identified so far and split them into 2 parts.
+   The reads are split by identifying the switch from one chromosome to another
+   based on unique k-mers
+6. Map the split reads to the reference sequences to identify parent regions
+   where each part of the ‘chimeric’ reads separately map to
+7. Pair the separate regions up to compile a candidate list of paired breakpoints
+8. Use Integrated Genome Viewer (IGV) to proof the paired breakpoints. Label the
+   breakpoint as either “Type I”, “Type II”, or “bad” (see next section for
+   definition of types)
