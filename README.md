@@ -44,12 +44,12 @@ Additional dependencies include:
 - [`minimap2`](https://github.com/lh3/minimap2)
 - [`samtools`](https://github.com/samtools/samtools)
 - [`faSplit`](https://hgdownload.soe.ucsc.edu/admin/exe/)
+- [`mosdepth`](https://github.com/brentp/mosdepth)
 
 ## Supported Operating systems
 
 We have tested latest version on the following OS:
 
-- macOS 15.0
 - Linux (Redhat)
 
 ## Usage
