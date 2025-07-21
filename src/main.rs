@@ -42,7 +42,7 @@ fn main() {
         env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
     );
 
-    // RUST annoyingly panicked when piping results to `head` (which isn't technically an error)
+    // RUST annoyingly panicked when piping results to `head` (which isn't technically an error),
     // so we need to disable this.
     unsafe {
         libc::signal(SIGPIPE, SIG_DFL);

@@ -2,10 +2,11 @@ use crate::models::prefix;
 
 use clap::Parser;
 use csv::ReaderBuilder;
-use log;
+use log::info;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::fs::{remove_file, File};
 use std::io::Write;
 
 #[derive(Parser, Debug)]
@@ -45,7 +46,7 @@ fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) -> String {
     let mut reader = parse_fastx_file(fasta_file).expect("valid reads file");
     let file_prefix = prefix(fasta_file);
     let output_file = file_prefix.to_string() + ".extracted.fasta";
-    let mut writer = std::fs::File::create(&output_file).unwrap();
+    let mut writer = File::create(&output_file).unwrap();
     let mut total = 0;
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
@@ -67,7 +68,7 @@ fn extract_one(read_map: &HashMap<String, String>, fasta_file: &str) -> String {
             total += 1;
         }
     }
-    log::info!("Extracted {} reads from `{}`", total, fasta_file);
+    info!("Extracted {} reads from `{}`", total, fasta_file);
     output_file
 }
 
@@ -79,14 +80,14 @@ pub fn extract(reads_tsv: &str, fasta_files: &Vec<String>, output_file: &str) {
         .map(|fasta_file| extract_one(&read_map, fasta_file))
         .collect::<Vec<_>>();
     // Merge the output files
-    let mut writer = std::fs::File::create(output_file).unwrap();
+    let mut writer = File::create(output_file).unwrap();
     for output_file in output_files.iter() {
-        let mut reader = std::fs::File::open(&output_file).unwrap();
+        let mut reader = File::open(output_file).unwrap();
         std::io::copy(&mut reader, &mut writer).expect("valid copy");
     }
-    // Cleanup the output files
+    // Clean up the output files
     for output_file in output_files {
-        std::fs::remove_file(output_file).expect("valid remove");
+        remove_file(output_file).expect("valid remove");
     }
-    log::info!("Extracted reads written to `{}`", output_file);
+    info!("Extracted reads written to `{}`", output_file);
 }

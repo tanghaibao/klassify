@@ -2,7 +2,7 @@ use crate::models::{need_update, prefix_until_dot, sh, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;
-use log;
+use log::{error, info};
 use rust_htslib::bam;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
@@ -14,7 +14,7 @@ use std::path::Path;
 pub struct RegionsArgs {
     /// BAM files
     pub bam_files: Vec<String>,
-    /// Do not limit chimeras between chromosomes only, e.g. must contain "Chr" and "chr"
+    /// Do not limit chimeras between chromosomes only, e.g., must contain "Chr" and "chr"
     #[clap(short, long, default_value_t = false)]
     pub no_chr_only: bool,
 }
@@ -58,15 +58,12 @@ pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
 fn regions_one(bam_file: &str) -> String {
     // Check if BAM index exists
     let bam_index = bam_file.to_string() + ".bai";
-    if !std::path::Path::new(&bam_index).exists() {
+    if !Path::new(&bam_index).exists() {
         bam::index::build(bam_file, None, bam::index::Type::Bai, 1).unwrap();
-        log::info!("Built index for `{}`", bam_file);
+        info!("Built index for `{}`", bam_file);
     }
     let mosdepth_out = prefix_until_dot(bam_file) + ".mosdepth";
-    let mosdepth_cmd = format!(
-        "mosdepth -t 8 -n --by {} {} {}",
-        BINSIZE, mosdepth_out, bam_file
-    );
+    let mosdepth_cmd = format!("mosdepth -t 8 -n --by {BINSIZE} {mosdepth_out} {bam_file}");
     let mosdepth_bed = mosdepth_out.to_string() + ".regions.bed.gz";
     if need_update(
         vec![bam_file.to_string()],
@@ -75,9 +72,9 @@ fn regions_one(bam_file: &str) -> String {
     ) {
         let status = sh(&mosdepth_cmd);
         if status {
-            log::info!("Generated depths for `{}`", bam_file);
+            info!("Generated depths for `{}`", bam_file);
         } else {
-            log::error!("Failed to generate depths for `{}`", bam_file);
+            error!("Failed to generate depths for `{}`", bam_file);
         }
     }
     mosdepth_bed
@@ -109,11 +106,7 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
 
     let child_records = load_bed(child_bed);
     let parent1_records = load_bed(parent1_bed);
-    let parent2_records = if let Some(bed) = parent2_bed {
-        Some(load_bed(&bed))
-    } else {
-        None
-    };
+    let parent2_records = parent2_bed.map(|bed| load_bed(&bed));
 
     let mut regions: BTreeMap<String, Vec<(u32, u32, f64)>> = BTreeMap::new();
 
@@ -146,7 +139,7 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
 
         let chrom_selected: Vec<_> = data
             .iter()
-            .filter(|&&(_, _, depth)| depth >= 5.0 && depth <= 100.0)
+            .filter(|&&(_, _, depth)| (5.0..=100.0).contains(&depth))
             .map(|&(start, end, depth)| (chrom.clone(), start, end, format!("{}", depth.round())))
             .collect();
 
@@ -163,34 +156,34 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
     }
 
     let prefix = Path::new(child_bed).file_stem().unwrap().to_str().unwrap();
-    let poi_tsv = format!("{}.poi.tsv", prefix);
+    let poi_tsv = format!("{prefix}.poi.tsv");
 
     let mut kf_writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .from_path(&poi_tsv)
         .unwrap();
 
-    kf_writer.write_record(&["Chrom", "Regions"]).unwrap();
+    kf_writer.write_record(["Chrom", "Regions"]).unwrap();
 
     for (chrom, regions_str) in d {
         kf_writer.write_record(&[chrom, regions_str]).unwrap();
     }
 
-    log::info!("Points of interests written to `{}`", poi_tsv);
+    info!("Points of interests written to `{}`", poi_tsv);
 
     // Merge regions that are close to each other
     selected.sort_by_key(|k| (k.0.clone(), k.1));
 
     let mut merged = Vec::new();
 
-    for i in 0..selected.len() {
+    for (i, s) in selected.iter().enumerate() {
         if i == 0 {
-            merged.push(selected[i].clone());
+            merged.push(s.clone());
             continue;
         }
 
         let prev = merged.last_mut().unwrap();
-        let cur = &selected[i];
+        let cur = s;
 
         if prev.0 == cur.0 && prev.2 + CHAIN_DISTANCE >= cur.1 {
             prev.2 = prev.2.max(cur.2);
@@ -201,17 +194,17 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
     }
 
     // Write the merged regions to a file
-    let regions_file = format!("{}.regions.tsv", prefix);
+    let regions_file = format!("{prefix}.regions.tsv");
     let mut counter = HashMap::new();
 
     let mut regions_writer = BufWriter::new(File::create(&regions_file).unwrap());
 
     for (chrom, start, end, score) in &merged {
-        writeln!(regions_writer, "{}:{}-{}\t{}", chrom, start, end, score).unwrap();
+        writeln!(regions_writer, "{chrom}:{start}-{end}\t{score}").unwrap();
         *counter.entry(chrom[..2].to_string()).or_insert(0) += 1;
     }
 
-    log::info!("Merged regions written to `{}`", regions_file);
-    log::info!("Region counts: {:?}", counter);
+    info!("Merged regions written to `{}`", regions_file);
+    info!("Region counts: {:?}", counter);
     counter
 }

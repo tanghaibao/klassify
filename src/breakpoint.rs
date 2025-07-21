@@ -2,7 +2,7 @@ use crate::info::{load_kmer_db, map_kmer_to_file};
 use crate::models::{prefix, prefix_until_dot, SingletonKmers};
 
 use clap::Parser;
-use log;
+use log::info;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
 use std::{
@@ -39,7 +39,7 @@ fn breakpoint_one(
     let file_prefix = prefix(fasta_file);
     let output_file = file_prefix.to_string() + ".classifications.bed";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
-    log::info!("Parsing reference");
+    info!("Parsing reference");
 
     // Iterate through the reads
     let kmer_size = singleton_kmers.kmer_size;
@@ -63,9 +63,9 @@ fn breakpoint_one(
                     prefix_until_dot(&singleton_kmers.fasta_files[file_index]),
                     kmer.0
                 );
-                writeln!(writer, "{}", to_write).unwrap();
+                writeln!(writer, "{to_write}").unwrap();
             }
         }
     }
-    log::info!("Classifications written to `{}`", output_file);
+    info!("Classifications written to `{}`", output_file);
 }

@@ -1,6 +1,6 @@
 use crate::models::DEFAULT_FLANK_SIZE;
 use clap::Parser;
-use log;
+use log::info;
 use rust_htslib::bam::{IndexedReader, Read};
 use std::collections::HashSet;
 use std::fs::File;
@@ -20,7 +20,7 @@ pub struct ExtractBamArgs {
 
 /// Extract reads from a BAM file
 pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
-    log::info!("Extracting reads from BAM file");
+    info!("Extracting reads from BAM file");
     let regions = std::fs::read_to_string(region_file).expect("valid region file");
     let regions: Vec<&str> = regions.lines().collect();
     let mut bam = IndexedReader::from_path(bam_file).expect("valid BAM file");
@@ -35,7 +35,7 @@ pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
         let end = region[1].parse::<i32>().expect("valid end position");
         let start = (start - flank_size).max(0);
         let end = end + flank_size;
-        let _ = bam.fetch((chrom, start, end)).expect("valid region");
+        bam.fetch((chrom, start, end)).expect("valid region");
         for record in bam.records() {
             let record = record.expect("valid record");
             if record.is_unmapped()
@@ -48,7 +48,7 @@ pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
             }
             let id = String::from_utf8(record.qname().to_vec()).expect("valid read ID");
             if seen.contains(&id) {
-                log::info!("Skipping duplicate read {}", id);
+                info!("Skipping duplicate read {}", id);
                 continue;
             }
             seen.insert(id.clone());

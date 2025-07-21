@@ -2,7 +2,7 @@ use crate::info::{load_kmer_db, map_kmer_to_file};
 use crate::models::{prefix, ClassifyResults, SingletonKmers};
 
 use clap::Parser;
-use log;
+use log::{error, info};
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -49,12 +49,14 @@ pub fn classify(
     std::fs::create_dir_all(output_dir).expect("valid output directory");
     let new_output_files = output_files
         .iter()
-        .map(|output_file| output_dir.to_string() + "/" + &output_file.split('/').last().unwrap())
+        .map(|output_file| {
+            output_dir.to_string() + "/" + output_file.split('/').next_back().unwrap()
+        })
         .collect::<Vec<_>>();
     for (output_file, new_output_file) in output_files.iter().zip(new_output_files.iter()) {
         std::fs::rename(output_file, new_output_file).expect("valid rename");
     }
-    log::info!(
+    info!(
         "Moved {} read classification to `{}`",
         new_output_files.len(),
         output_dir
@@ -71,12 +73,12 @@ pub fn classify(
     }
 
     if all_reads.is_empty() {
-        log::error!("No reads passed the filter");
+        error!("No reads passed the filter");
         return;
     }
-    let output_path = format!("{}.filtered.tsv", output_dir);
+    let output_path = format!("{output_dir}.filtered.tsv");
     let mut writer =
-        BufWriter::new(File::create(&Path::new(&output_path)).expect("Unable to create file"));
+        BufWriter::new(File::create(Path::new(&output_path)).expect("Unable to create file"));
 
     // Write the header again, now with the label column
     writeln!(
@@ -94,16 +96,14 @@ pub fn classify(
     for read in all_reads.iter() {
         writeln!(writer, "{}", read.join("\t"),).expect("Unable to write row");
     }
-    log::info!(
+    info!(
         "Wrote {} filtered read classification to `{}`",
         all_reads.len(),
         output_path,
     );
-    log::info!(
+    info!(
         "Filter rules: unique kmer ≧ {}, A unique + B unique ≧ {}%, B unique ≧ {}%",
-        KMER_THRESHOLD,
-        SCORE_THRESHOLD,
-        MINOR_SCORE_THRESHOLD
+        KMER_THRESHOLD, SCORE_THRESHOLD, MINOR_SCORE_THRESHOLD
     );
 }
 
@@ -118,7 +118,7 @@ fn classify_one(
     let file_prefix = prefix(reads_file);
     let output_file = file_prefix + ".read_classifications.tsv";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
-    log::info!("Classifying reads in `{}`", reads_file);
+    info!("Classifying reads in `{}`", reads_file);
     writeln!(
         writer,
         "ID\tLength\tKmers\tClassification\t{}",
@@ -169,10 +169,10 @@ fn classify_one(
                 .collect::<Vec<_>>()
                 .join("\t")
         );
-        writeln!(writer, "{}", to_write).unwrap();
+        writeln!(writer, "{to_write}").unwrap();
         count += 1;
     }
-    log::info!("Wrote {} read classifications to `{}`", count, output_file);
+    info!("Wrote {} read classifications to `{}`", count, output_file);
 
     output_file
 }
@@ -219,10 +219,10 @@ fn filter_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
             && scores.iter().sum::<i32>() >= SCORE_THRESHOLD
             && scores[1] >= MINOR_SCORE_THRESHOLD
         {
-            new_row.push(format!("{}_{}", a, b));
+            new_row.push(format!("{a}_{b}"));
             filtered.push(new_row);
         }
     }
-    log::info!("Filtered {} reads from `{}`", filtered.len(), rc);
+    info!("Filtered {} reads from `{}`", filtered.len(), rc);
     filtered
 }
