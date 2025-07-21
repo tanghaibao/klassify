@@ -1,7 +1,7 @@
 use crate::models::MAX_DE;
 
 use clap::Parser;
-use log;
+use log::info;
 use num_cpus;
 use rust_htslib::bam;
 use rust_htslib::bam::{record::Aux, Read};
@@ -28,11 +28,9 @@ pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32, min_mapq: u8) {
     let n_threads_write = n_threads - n_threads_read;
     let mut bam = bam::Reader::from_path(input_bam).unwrap();
     bam.set_threads(n_threads).unwrap();
-    log::info!(
+    info!(
         "Reading BAM file `{}` (n_threads_read={}, n_threads_write={})",
-        input_bam,
-        n_threads_read,
-        n_threads_write
+        input_bam, n_threads_read, n_threads_write
     );
     let header = bam::Header::from_template(bam.header());
     let mut out_bam = bam::Writer::from_path(output_bam, &header, bam::Format::Bam).unwrap();
@@ -42,7 +40,7 @@ pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32, min_mapq: u8) {
     for r in bam.records() {
         total_reads += 1;
         if total_reads % 1_000_000 == 0 {
-            log::info!(
+            info!(
                 "Processed {} reads, retained {} reads ({}%)",
                 total_reads,
                 retained_reads,
@@ -66,7 +64,7 @@ pub fn sort_bam(input_bam: &str, output_bam: &str, max_de: f32, min_mapq: u8) {
             retained_reads += 1;
         }
     }
-    log::info!(
+    info!(
         "Sorted {} ({}% of {}) reads to `{}`",
         retained_reads,
         retained_reads * 100 / total_reads,

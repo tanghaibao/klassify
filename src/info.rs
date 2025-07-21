@@ -1,7 +1,8 @@
 use crate::models::SingletonKmers;
 
-use bincode::deserialize_from;
+use bincode::{config, decode_from_std_read};
 use clap::Parser;
+use log::info;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
@@ -14,12 +15,12 @@ pub struct InfoArgs {
 
 /// Load the bincode file and print some information about it.
 pub fn load_kmer_db(bincode_file: &str) -> SingletonKmers {
-    let reader = BufReader::new(File::open(bincode_file).unwrap());
-    let singleton_kmers: SingletonKmers = deserialize_from(reader).unwrap();
-    log::info!(
+    let mut reader = BufReader::new(File::open(bincode_file).unwrap());
+    let singleton_kmers: SingletonKmers =
+        decode_from_std_read(&mut reader, config::standard()).unwrap();
+    info!(
         "Loaded singleton kmers (K={}) from `{}`",
-        singleton_kmers.kmer_size,
-        bincode_file
+        singleton_kmers.kmer_size, bincode_file
     );
     singleton_kmers
 }
@@ -33,7 +34,7 @@ pub fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize>
             kmer_to_file.insert(kmer, file_index);
         }
     }
-    log::info!("Mapped kmers to files");
+    info!("Mapped kmers to files");
     kmer_to_file
 }
 

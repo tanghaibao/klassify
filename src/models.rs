@@ -1,5 +1,5 @@
-use log;
-use serde::{Deserialize, Serialize};
+use bincode::{Decode, Encode};
+use log::info;
 use std::fs;
 use std::path::Path;
 
@@ -12,7 +12,7 @@ pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
 /// Maximum divergence
 pub const MAX_DE: f32 = 0.01; // 1%
 
-#[derive(Serialize, Deserialize)]
+#[derive(Decode, Encode)]
 pub struct SingletonKmers {
     pub kmer_size: u8,
     pub fasta_files: Vec<String>,
@@ -33,7 +33,7 @@ pub struct ClassifyResults {
 }
 
 impl ClassifyResults {
-    pub fn tag(&self, fasta_files: &Vec<String>) -> String {
+    pub fn tag(&self, fasta_files: &[String]) -> String {
         let mut best_count = 0;
         let mut best_index = 0;
         let mut second_best_count = 0;
@@ -89,7 +89,7 @@ pub fn prefix_until_dot(file_path: &str) -> String {
 
 /// Run shell command
 pub fn sh(command: &str) -> bool {
-    log::info!("{}", command);
+    info!("{}", command);
     let status = std::process::Command::new("sh")
         .arg("-c")
         .arg(command)
@@ -98,7 +98,7 @@ pub fn sh(command: &str) -> bool {
     status.success()
 }
 
-/// Determine if file a is newer than file b
+/// Determine if file `a` is newer than file `b`
 fn is_newer_file(a: &str, b: &str) -> bool {
     let a_modified = fs::metadata(a).and_then(|m| m.modified()).ok();
     let b_modified = fs::metadata(b).and_then(|m| m.modified()).ok();
@@ -109,7 +109,7 @@ fn is_newer_file(a: &str, b: &str) -> bool {
     }
 }
 
-/// Check if any file in list a is newer than file in list b
+/// Check if any file in list `a` is newer than file in list `b`
 pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x).exists())
         || b.iter()
@@ -117,7 +117,7 @@ pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
         || a.iter().any(|x| b.iter().any(|y| is_newer_file(x, y)));
 
     if !should_update && warn {
-        log::info!("File `{}` found. Computation skipped.", b.join(", "));
+        info!("File `{}` found. Computation skipped.", b.join(", "));
     }
 
     should_update
