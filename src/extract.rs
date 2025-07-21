@@ -1,4 +1,4 @@
-use crate::models::prefix;
+use crate::utils::prefix;
 
 use clap::Parser;
 use csv::ReaderBuilder;

@@ -1,4 +1,4 @@
-use crate::models::{need_update, prefix_until_dot, sh, BINSIZE, CHAIN_DISTANCE};
+use crate::utils::{need_update, prefix_until_dot, sh, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;

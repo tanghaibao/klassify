@@ -1,4 +1,4 @@
-use crate::models::MAX_DE;
+use crate::utils::MAX_DE;
 
 use clap::Parser;
 use log::info;
