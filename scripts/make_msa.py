@@ -67,7 +67,7 @@ def write_aligned_fasta(region: str, ban: Set[str], aligned_fasta: str):
     logger.info("SUCCESS!")
 
 
-def main(args: List[str]):
+def main():
     bps = pd.read_excel("All-F1-breakpoints.xlsx")
     for _, row in bps.iterrows():
         crossover_id = row["Crossover ID"]
@@ -79,12 +79,7 @@ def main(args: List[str]):
         fasta_file = f"{crossover_id}.fasta"
         ban = set()
         if crossover_id == "9208-So-02":
-            ban = set(
-                [
-                    "m84072_230515_103837_s3/220072159/ccs",
-                    "m84072_230515_103837_s3/165938098/ccs",
-                ]
-            )
+            ban = {"m84072_230515_103837_s3/220072159/ccs", "m84072_230515_103837_s3/165938098/ccs"}
         write_aligned_fasta(region, ban, fasta_file)
         cmd = (
             f"clustalo -i {fasta_file} -o {fasta_file}.aln  --outfmt clu --force --full"
@@ -93,4 +88,4 @@ def main(args: List[str]):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
