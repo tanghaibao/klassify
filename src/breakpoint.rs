@@ -1,5 +1,5 @@
 use crate::info::{load_kmer_db, map_kmer_to_file};
-use crate::models::{prefix, prefix_until_dot, SingletonKmers};
+use crate::utils::{prefix, prefix_until_dot, SingletonKmers};
 
 use clap::Parser;
 use log::info;

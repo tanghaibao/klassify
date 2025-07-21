@@ -1,4 +1,4 @@
-use crate::models::{prefix_until_dot, SingletonKmers};
+use crate::utils::{prefix_until_dot, SingletonKmers};
 use bincode::{config, encode_into_std_write};
 use clap::Parser;
 use log::info;

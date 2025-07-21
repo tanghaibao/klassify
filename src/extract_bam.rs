@@ -1,4 +1,4 @@
-use crate::models::DEFAULT_FLANK_SIZE;
+use crate::utils::DEFAULT_FLANK_SIZE;
 use clap::Parser;
 use log::info;
 use rust_htslib::bam::{IndexedReader, Read};

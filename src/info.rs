@@ -1,4 +1,4 @@
-use crate::models::SingletonKmers;
+use crate::utils::SingletonKmers;
 
 use bincode::{config, decode_from_std_read};
 use clap::Parser;
