@@ -1,5 +1,4 @@
 use perbase_lib::par_granges::RegionProcessor;
-use rust_htslib::bam::{self, Read};
 use serde::Serialize;
 use std::path::PathBuf;
 
@@ -28,46 +27,44 @@ pub(crate) struct WindowProcessor {
     pub bam: PathBuf,
     pub bin_size: u32,
 }
-
 impl RegionProcessor for WindowProcessor {
     type P = BedRecord;
 
     fn process_region(&self, tid: u32, start: u32, stop: u32) -> Vec<Self::P> {
+        use rust_htslib::bam::{self, Read};
+
+        // BAM reader
         let mut rdr = bam::IndexedReader::from_path(&self.bam).unwrap();
-        let hdr = rdr.header().to_owned();
         rdr.fetch((tid, start, stop)).unwrap();
+        let chrom = String::from_utf8_lossy(rdr.header().tid2name(tid)).into_owned();
 
-        let mut bins = Vec::new();
-        let mut sum = 0u64;
-        let mut b_start = start;
+        // Bin bookkeeping
+        let bin = self.bin_size;
+        let n_bins = (stop - start).div_ceil(bin) as usize; // ceil div
+        let mut sum = vec![0u64; n_bins]; // cumulative depth per bin
+        let mut cov = vec![0u32; n_bins]; // # positions seen in bin
 
-        for p in rdr.pileup() {
-            let pile = p.unwrap();
-            let pos = pile.pos();
-            // advance to the next bin if necessary
-            while pos >= b_start + self.bin_size {
-                bins.push(BedRecord {
-                    chrom: String::from_utf8_lossy(hdr.tid2name(tid)).into(),
+        // Stream pile-up once
+        for pile in rdr.pileup() {
+            let pile = pile.unwrap();
+            let idx = ((pile.pos() - start) / bin) as usize;
+            sum[idx] += pile.depth() as u64;
+            cov[idx] += 1;
+        }
+
+        // Convert to BED records
+        (0..n_bins)
+            .map(|i| {
+                let b_start = start + (i as u32) * bin;
+                let b_end = (b_start + bin).min(stop); // last bin may be short
+                let width = (b_end - b_start) as f64; // denom
+                BedRecord {
+                    chrom: chrom.clone(),
                     start: b_start,
-                    end: b_start + self.bin_size,
-                    depth: sum as f64 / self.bin_size as f64,
-                });
-                b_start += self.bin_size;
-                sum = 0;
-            }
-            sum += pile.depth() as u64;
-        }
-        // flush the last (possibly partial) bin
-        let end = (b_start + self.bin_size).min(stop);
-        let count = end - b_start;
-        if count > 0 {
-            bins.push(BedRecord {
-                chrom: String::from_utf8_lossy(hdr.tid2name(tid)).into(),
-                start: b_start,
-                end,
-                depth: sum as f64 / count as f64,
-            });
-        }
-        bins
+                    end: b_end,
+                    depth: sum[i] as f64 / width, // mean depth
+                }
+            })
+            .collect()
     }
 }
