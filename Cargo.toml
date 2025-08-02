@@ -17,7 +17,6 @@ needletail = "0.5"
 num_cpus = "1.16"
 rayon = "1.10"
 rust-htslib = "0.46"
-serde = { version = "1.0", features = ["derive"] }
 
 [[bin]]
 name = "klassify"
