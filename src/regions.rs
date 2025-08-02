@@ -80,7 +80,7 @@ fn regions_one(bam_file: &str) -> String {
     mosdepth_bed
 }
 
-/// Load BED file into a bunch of records
+/// Load a BED file into a bunch of records
 fn load_bed(bed: &str) -> Vec<BedRecord> {
     let file = BufReader::new(flate2::read::MultiGzDecoder::new(File::open(bed).unwrap()));
     let mut rdr = ReaderBuilder::new().delimiter(b'\t').from_reader(file);

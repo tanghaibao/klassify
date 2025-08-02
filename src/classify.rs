@@ -19,7 +19,7 @@ const MINOR_SCORE_THRESHOLD: i32 = 10;
 pub struct ClassifyArgs {
     /// Bincode file
     pub bincode_file: String,
-    /// Read file to classify
+    /// List of read files to classify
     pub reads_file: Vec<String>,
     /// Output directory
     #[clap(short, long)]

@@ -82,7 +82,7 @@ pub fn prefix(file_path: &str) -> String {
         .to_string()
 }
 
-/// Get basename and up to the first dot in path
+/// Get basename and up to the first dot in the path
 pub fn prefix_until_dot(file_path: &str) -> String {
     prefix(file_path).split('.').next().unwrap().to_string()
 }
@@ -98,7 +98,7 @@ pub fn sh(command: &str) -> bool {
     status.success()
 }
 
-/// Determine if file `a` is newer than file `b`
+/// Determine if file `a` is newer than the file `b`
 fn is_newer_file(a: &str, b: &str) -> bool {
     let a_modified = fs::metadata(a).and_then(|m| m.modified()).ok();
     let b_modified = fs::metadata(b).and_then(|m| m.modified()).ok();
@@ -109,7 +109,7 @@ fn is_newer_file(a: &str, b: &str) -> bool {
     }
 }
 
-/// Check if any file in list `a` is newer than file in list `b`
+/// Check if any file in the list `a` is newer than any file in the list `b`
 pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x).exists())
         || b.iter()
