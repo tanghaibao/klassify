@@ -27,6 +27,7 @@ pub(crate) struct WindowProcessor {
     pub bam: PathBuf,
     pub bin_size: u32,
 }
+
 impl RegionProcessor for WindowProcessor {
     type P = BedRecord;
 
