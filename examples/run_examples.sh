@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1. Create a database of unique kmers from the parental genomes
-cd examples
+cd examples || exit 1
 mkdir -p ref f1_reads f1_classify parent_reads parent_classify
 faSplit byname parents.genome.fa ref/
 klassify build ref/*.fa -o kmers.bc
