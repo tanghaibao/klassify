@@ -37,7 +37,7 @@ With Rust installed, you can just install the software with `cargo`.
 cargo install klassify
 ```
 
-Typical install time on a desktop computer is ~1 minute.
+Typical installation time on a desktop computer is ~1 minute.
 
 Additional dependencies include:
 
@@ -49,6 +49,7 @@ Additional dependencies include:
 
 We have tested latest version (`0.1.4` and above) on the following OS:
 
+- macOS (15.5)
 - Linux (Redhat Enterprise 7.6)
 
 ## Usage
