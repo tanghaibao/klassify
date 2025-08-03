@@ -10,6 +10,12 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
+/// Minimum read support for a candidate region
+const MIN_READ_SUPPORT: u32 = 5;
+
+/// Maximum read support for a candidate region
+const MAX_READ_SUPPORT: u32 = 100;
+
 #[derive(Parser, Debug)]
 #[command(arg_required_else_help(true))]
 pub struct RegionsArgs {
@@ -18,10 +24,16 @@ pub struct RegionsArgs {
     /// Do not limit chimeras between chromosomes only, e.g., must contain "Chr" and "chr"
     #[clap(short, long, default_value_t = false)]
     pub no_chr_only: bool,
+    /// Minimum depth support for a region
+    #[clap(long, default_value_t = MIN_READ_SUPPORT)]
+    pub min_support: u32,
+    /// Maximum depth support for a region
+    #[clap(long, default_value_t = MAX_READ_SUPPORT)]
+    pub max_support: u32,
 }
 
 /// Prepare BAM files and generate depths for each bin
-pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
+pub fn regions(bam_files: &Vec<String>, chr_only: bool, min_support: u32, max_support: u32) {
     let mut bed_files = Vec::new();
     for bam_file in bam_files {
         let bed_file = if bam_file.ends_with(".bam") {
@@ -33,7 +45,7 @@ pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
     }
 
     // Perform the depth analysis
-    process_bedfiles(bed_files, chr_only);
+    process_bedfiles(bed_files, chr_only, min_support, max_support);
 }
 
 /// Prepare one BAM file and generate depths for each bin
@@ -83,7 +95,12 @@ fn load_bed(bed: &str) -> Vec<BedRecord> {
 }
 
 /// Process F1 and parent BED files to generate candidate regions.
-fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i32> {
+fn process_bedfiles(
+    bed_files: Vec<String>,
+    chr_only: bool,
+    min_support: u32,
+    max_support: u32,
+) -> HashMap<String, i32> {
     let child_bed = &bed_files[0];
     let parent1_bed = &bed_files[1];
     let parent2_bed = if bed_files.len() == 3 {
@@ -117,6 +134,7 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
 
     let mut d = Vec::new();
     let mut selected = Vec::new();
+    let support_range = min_support as f64..=max_support as f64;
 
     for (chrom, data) in &mut regions {
         if chr_only && !chrom.contains("Chr") && !chrom.contains("chr") {
@@ -127,7 +145,7 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
 
         let chrom_selected: Vec<_> = data
             .iter()
-            .filter(|&&(_, _, depth)| (5.0..=100.0).contains(&depth))
+            .filter(|&&(_, _, depth)| support_range.contains(&depth))
             .map(|&(start, end, depth)| (chrom.clone(), start, end, format!("{}", depth.round())))
             .collect();
 
