@@ -138,7 +138,7 @@ pub fn need_update<S: AsRef<Path>, T: AsRef<Path> + ToString>(
 /// Build BAM index if needed
 pub fn index_bam(bam_file: &str) {
     let bam_index = bam_file.to_string() + ".bai";
-    if !need_update(&[&bam_file], &[&bam_index], false) {
+    if !need_update(&[bam_file], &[&bam_index], false) {
         info!("BAM index `{bam_index}` already exists. Skipping indexing.");
         return;
     }

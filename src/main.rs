@@ -82,7 +82,12 @@ fn main() {
             );
         }
         SubCommand::Regions(regions) => {
-            regions::regions(&regions.bam_files, !regions.no_chr_only);
+            regions::regions(
+                &regions.bam_files,
+                !regions.no_chr_only,
+                regions.min_support,
+                regions.max_support,
+            );
         }
         SubCommand::SortBam(sort_bam) => {
             sort_bam::sort_bam(
