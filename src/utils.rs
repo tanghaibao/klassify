@@ -1,16 +1,23 @@
 use bincode::{Decode, Encode};
 use log::info;
+use rust_htslib::bam;
 use std::fs;
 use std::path::Path;
 
 /// Discrete bin size to contract regions
 pub const BINSIZE: u32 = 10_000;
+
 /// Chain distance to merge regions
 pub const CHAIN_DISTANCE: u32 = 2 * BINSIZE;
+
 /// Flank size to extract from the region
 pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
+
 /// Maximum divergence
 pub const MAX_DE: f32 = 0.01; // 1%
+
+/// Number of threads used to read BAM files
+const N_THREADS_READ_BAM: usize = 32;
 
 #[derive(Decode, Encode)]
 pub struct SingletonKmers {
@@ -82,7 +89,7 @@ pub fn prefix(file_path: &str) -> String {
         .to_string()
 }
 
-/// Get basename and up to the first dot in path
+/// Get basename and up to the first dot in the path
 pub fn prefix_until_dot(file_path: &str) -> String {
     prefix(file_path).split('.').next().unwrap().to_string()
 }
@@ -98,7 +105,7 @@ pub fn sh(command: &str) -> bool {
     status.success()
 }
 
-/// Determine if file `a` is newer than file `b`
+/// Determine if file `a` is newer than the file `b`
 fn is_newer_file(a: &str, b: &str) -> bool {
     let a_modified = fs::metadata(a).and_then(|m| m.modified()).ok();
     let b_modified = fs::metadata(b).and_then(|m| m.modified()).ok();
@@ -109,8 +116,8 @@ fn is_newer_file(a: &str, b: &str) -> bool {
     }
 }
 
-/// Check if any file in list `a` is newer than file in list `b`
-pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
+/// Check if any file in the list `a` is newer than any file in the list `b`
+pub fn need_update(a: &[String], b: &[String], warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x).exists())
         || b.iter()
             .all(|x| fs::metadata(x).map(|m| m.len() == 0).unwrap_or(false))
@@ -121,4 +128,16 @@ pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
     }
 
     should_update
+}
+
+/// Build BAM index if needed
+pub fn index_bam(bam_file: &str) {
+    let bam_index = bam_file.to_string() + ".bai";
+    if !need_update(&[bam_file.to_string()], &[bam_index.to_string()], false) {
+        info!("BAM index `{bam_index}` already exists. Skipping indexing.");
+        return;
+    }
+    let n_threads = N_THREADS_READ_BAM;
+    info!("Indexing `{bam_file}` (n_threads={n_threads})");
+    _ = bam::index::build(bam_file, None, bam::index::Type::Bai, n_threads as u32);
 }

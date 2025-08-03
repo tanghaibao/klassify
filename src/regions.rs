@@ -1,9 +1,10 @@
-use crate::utils::{need_update, prefix_until_dot, sh, BINSIZE, CHAIN_DISTANCE};
+use crate::depth::{get_runner, BedRecord};
+use crate::utils::{index_bam, need_update, prefix_until_dot, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;
-use log::{error, info};
-use rust_htslib::bam;
+use log::info;
+use perbase_lib::utils::get_writer;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
@@ -19,31 +20,12 @@ pub struct RegionsArgs {
     pub no_chr_only: bool,
 }
 
-#[derive(Debug)]
-struct BedRecord {
-    chrom: String,
-    start: u32,
-    end: u32,
-    depth: String,
-}
-
-impl BedRecord {
-    fn from_csv_record(record: &csv::StringRecord) -> BedRecord {
-        BedRecord {
-            chrom: record[0].to_string(),
-            start: record[1].parse().unwrap(),
-            end: record[2].parse().unwrap(),
-            depth: record[3].parse().unwrap(),
-        }
-    }
-}
-
 /// Prepare BAM files and generate depths for each bin
 pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
     let mut bed_files = Vec::new();
     for bam_file in bam_files {
         let bed_file = if bam_file.ends_with(".bam") {
-            regions_one(bam_file)
+            regions_one(bam_file, BINSIZE)
         } else {
             bam_file.clone()
         };
@@ -55,32 +37,38 @@ pub fn regions(bam_files: &Vec<String>, chr_only: bool) {
 }
 
 /// Prepare one BAM file and generate depths for each bin
-fn regions_one(bam_file: &str) -> String {
+fn regions_one(bam_file: &str, bin_size: u32) -> String {
     // Check if BAM index exists
-    let bam_index = bam_file.to_string() + ".bai";
-    if !Path::new(&bam_index).exists() {
-        bam::index::build(bam_file, None, bam::index::Type::Bai, 1).unwrap();
-        info!("Built index for `{}`", bam_file);
+    index_bam(bam_file);
+
+    // Output file compatible with the .regions.bed.gz
+    let out_prefix = prefix_until_dot(bam_file);
+    let bed_path = format!("{out_prefix}.regions.bed.gz");
+    if need_update(&[bam_file.into()], &[bed_path.clone()], true) {
+        let runner = get_runner(bam_file, bin_size);
+        let rx = runner.process().unwrap(); // multithreaded iteration
+        let mut writer = get_writer(&Some(&bed_path), true, false, 0, 6).unwrap();
+
+        rx.into_iter()
+            .try_for_each(|d| -> Result<(), csv::Error> {
+                // BED is 0-based, half-open
+                writer
+                    .write_record([
+                        d.chrom.as_str(),
+                        d.start.to_string().as_str(),
+                        d.end.to_string().as_str(),
+                        d.depth.to_string().as_str(),
+                    ])
+                    .expect("Failed to write BED record");
+                Ok(())
+            })
+            .expect("Failed to write BED record");
     }
-    let mosdepth_out = prefix_until_dot(bam_file) + ".mosdepth";
-    let mosdepth_cmd = format!("mosdepth -t 8 -n --by {BINSIZE} {mosdepth_out} {bam_file}");
-    let mosdepth_bed = mosdepth_out.to_string() + ".regions.bed.gz";
-    if need_update(
-        vec![bam_file.to_string()],
-        vec![mosdepth_bed.to_string()],
-        true,
-    ) {
-        let status = sh(&mosdepth_cmd);
-        if status {
-            info!("Generated depths for `{}`", bam_file);
-        } else {
-            error!("Failed to generate depths for `{}`", bam_file);
-        }
-    }
-    mosdepth_bed
+    info!("Generated depth `{bed_path}` for `{bam_file}`");
+    bed_path
 }
 
-/// Load BED file into a bunch of records
+/// Load a BED file into a bunch of records
 fn load_bed(bed: &str) -> Vec<BedRecord> {
     let file = BufReader::new(flate2::read::MultiGzDecoder::new(File::open(bed).unwrap()));
     let mut rdr = ReaderBuilder::new().delimiter(b'\t').from_reader(file);
@@ -111,10 +99,10 @@ fn process_bedfiles(bed_files: Vec<String>, chr_only: bool) -> HashMap<String, i
     let mut regions: BTreeMap<String, Vec<(u32, u32, f64)>> = BTreeMap::new();
 
     for (i, child_record) in child_records.iter().enumerate() {
-        let child_depth = child_record.depth.parse::<f64>().unwrap();
-        let parent1_depth = parent1_records[i].depth.parse::<f64>().unwrap();
+        let child_depth = child_record.depth;
+        let parent1_depth = parent1_records[i].depth;
         let parent2_depth = if let Some(ref parent2_recs) = parent2_records {
-            parent2_recs[i].depth.parse::<f64>().unwrap()
+            parent2_recs[i].depth
         } else {
             0.0
         };

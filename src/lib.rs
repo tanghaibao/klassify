@@ -1,6 +1,7 @@
 pub mod breakpoint;
 pub mod build;
 pub mod classify;
+mod depth;
 pub mod extract;
 pub mod extract_bam;
 pub mod info;

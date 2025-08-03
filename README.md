@@ -44,7 +44,6 @@ Additional dependencies include:
 - [`minimap2`](https://github.com/lh3/minimap2)
 - [`samtools`](https://github.com/samtools/samtools)
 - [`faSplit`](https://hgdownload.soe.ucsc.edu/admin/exe/)
-- [`mosdepth`](https://github.com/brentp/mosdepth)
 
 ## Supported Operating systems
 
@@ -96,19 +95,20 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
     --split-prefix parent_classify | samtools sort -@ 8 -o parent_classify.bam
 ```
 
-5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent reads (so we are not affected by assembly errors)
+5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
+   reads (so we are not affected by assembly errors)
 
 ```console
 klassify regions f1_classify.bam parent_classify.bam
 ```
 
 That's it! The breakpoint locations in the parental genomes are in
-`f1_classify.mosdepth.regions.bed.regions.tsv`, where column 2 shows the supported
+`f1_classify.regions.bed.regions.tsv`, where column 2 shows the supported
 depth within each consecutive 10kb bin around the breakpoint (by default: at
 least 5 supported reads):
 
 ```console
-SoChr01B:70000-90000	12,5
+SoChr01B:70000-90000	13,6
 SoChr01F:80000-90000	11
 ```
 
