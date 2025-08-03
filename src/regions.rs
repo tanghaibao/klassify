@@ -1,13 +1,11 @@
 use crate::depth::{get_runner, BedRecord};
 use crate::utils::{index_bam, need_update, prefix_until_dot, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
-use csv::ReaderBuilder;
-use flate2;
 use log::info;
-use perbase_lib::utils::get_writer;
+use perbase_lib::utils::{get_reader, get_writer};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Write};
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 /// Minimum read support for a candidate region
@@ -82,16 +80,8 @@ fn regions_one(bam_file: &str, bin_size: u32) -> String {
 
 /// Load a BED file into a bunch of records
 fn load_bed(bed: &str) -> Vec<BedRecord> {
-    let file = BufReader::new(flate2::read::MultiGzDecoder::new(File::open(bed).unwrap()));
-    let mut rdr = ReaderBuilder::new().delimiter(b'\t').from_reader(file);
-    let mut records = Vec::new();
-
-    for record in rdr.records() {
-        let record = record.unwrap();
-        records.push(BedRecord::from_csv_record(&record));
-    }
-
-    records
+    let mut reader = get_reader(&Some(bed), false, true).expect("Failed to open BED file");
+    reader.deserialize().map(Result::unwrap).collect()
 }
 
 /// Process F1 and parent BED files to generate candidate regions.
