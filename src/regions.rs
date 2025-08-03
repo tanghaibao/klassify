@@ -44,7 +44,7 @@ fn regions_one(bam_file: &str, bin_size: u32) -> String {
     // Output file compatible with the .regions.bed.gz
     let out_prefix = prefix_until_dot(bam_file);
     let bed_path = format!("{out_prefix}.regions.bed.gz");
-    if need_update(&[bam_file.into()], &[bed_path.clone()], true) {
+    if need_update(&[bam_file], &[&bed_path], true) {
         let runner = get_runner(bam_file, bin_size);
         let rx = runner.process().unwrap(); // multithreaded iteration
         let mut writer = get_writer(&Some(&bed_path), true, false, 0, 6).unwrap();
