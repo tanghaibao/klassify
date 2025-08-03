@@ -1,15 +1,14 @@
-use crate::depth::{BedRecord, WindowProcessor};
+use crate::depth::{get_runner, BedRecord};
 use crate::utils::{index_bam, need_update, prefix_until_dot, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use csv::ReaderBuilder;
 use flate2;
 use log::info;
-use perbase_lib::par_granges::ParGranges;
 use perbase_lib::utils::get_writer;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 #[command(arg_required_else_help(true))]
@@ -42,26 +41,11 @@ fn regions_one(bam_file: &str, bin_size: u32) -> String {
     // Check if BAM index exists
     index_bam(bam_file);
 
-    // Output file compatible with the {.mosdepth}.regions.bed.gz
+    // Output file compatible with the .regions.bed.gz
     let out_prefix = prefix_until_dot(bam_file);
     let bed_path = format!("{out_prefix}.regions.bed.gz");
-    if need_update(vec![bam_file.into()], vec![bed_path.clone()], true) {
-        let proc = WindowProcessor {
-            bam: PathBuf::from(bam_file),
-            bin_size,
-        };
-        let runner = ParGranges::new(
-            PathBuf::from(bam_file),
-            None,
-            None,
-            None,  // no fasta, no VCF/BED constraints
-            false, // merge intervals
-            None,
-            None,
-            None, // default threads/chunking
-            proc,
-        );
-
+    if need_update(&[bam_file.into()], &[bed_path.clone()], true) {
+        let runner = get_runner(bam_file, bin_size);
         let rx = runner.process().unwrap(); // multithreaded iteration
         let mut writer = get_writer(&Some(&bed_path), true, false, 0, 6).unwrap();
 

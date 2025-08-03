@@ -117,7 +117,7 @@ fn is_newer_file(a: &str, b: &str) -> bool {
 }
 
 /// Check if any file in the list `a` is newer than any file in the list `b`
-pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
+pub fn need_update(a: &[String], b: &[String], warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x).exists())
         || b.iter()
             .all(|x| fs::metadata(x).map(|m| m.len() == 0).unwrap_or(false))
@@ -133,11 +133,7 @@ pub fn need_update(a: Vec<String>, b: Vec<String>, warn: bool) -> bool {
 /// Build BAM index if needed
 pub fn index_bam(bam_file: &str) {
     let bam_index = bam_file.to_string() + ".bai";
-    if !need_update(
-        vec![bam_file.to_string()],
-        vec![bam_index.to_string()],
-        false,
-    ) {
+    if !need_update(&[bam_file.to_string()], &[bam_index.to_string()], false) {
         info!("BAM index `{bam_index}` already exists. Skipping indexing.");
         return;
     }
