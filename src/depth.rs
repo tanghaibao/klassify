@@ -4,30 +4,19 @@ use perbase_lib::read_filter::ReadFilter;
 use rust_htslib::bam::pileup::Alignment;
 use rust_htslib::bam::Record;
 use rust_htslib::bam::{self, Read};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// A runner that processes BAM files with a basic read filter
 pub(crate) type Runner = ParGranges<WindowProcessor<BasicReadFilter>>;
 
 /// One BED-style line per fixed-size bin
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub(crate) struct BedRecord {
     pub chrom: String,
     pub start: u32,
     pub end: u32,
     pub depth: f64,
-}
-
-impl BedRecord {
-    pub(crate) fn from_csv_record(record: &csv::StringRecord) -> BedRecord {
-        BedRecord {
-            chrom: record[0].to_string(),
-            start: record[1].parse().unwrap(),
-            end: record[2].parse().unwrap(),
-            depth: record[3].parse().unwrap(),
-        }
-    }
 }
 
 /// A struct that holds the filter values that will be used to implement `ReadFilter`
