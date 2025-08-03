@@ -10,7 +10,6 @@ bincode = "2.0.1"
 clap = { version = "4.5", features = ["derive"] }
 csv = "1.3"
 env_logger = "0.11"
-flate2 = "1.1.2"
 libc = "0.2"
 log = "0.4"
 needletail = "0.5"
@@ -19,6 +18,10 @@ perbase = "1.0"
 rayon = "1.10"
 rust-htslib = "0.39"
 serde = { version = "1.0.219", features = ["derive"] }
+
+[dev-dependencies]
+tempfile = "3.20.0"
+filetime = "0.2.25"
 
 [[bin]]
 name = "klassify"

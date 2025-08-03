@@ -117,18 +117,17 @@ fn is_newer_file<S: AsRef<Path>, T: AsRef<Path>>(a: S, b: T) -> bool {
 }
 
 /// Check if any file in the list `a` is newer than any file in the list `b`
-pub fn need_update<S: AsRef<Path>, T: AsRef<Path> + ToString>(
-    a: &[S],
-    b: &[T],
-    warn: bool,
-) -> bool {
+pub fn need_update<S: AsRef<Path>, T: AsRef<Path>>(a: &[S], b: &[T], warn: bool) -> bool {
     let should_update = b.iter().any(|x| !Path::new(x.as_ref()).exists())
         || b.iter()
             .all(|x| metadata(x).map(|m| m.len() == 0).unwrap_or(false))
         || a.iter().any(|x| b.iter().any(|y| is_newer_file(x, y)));
 
     if !should_update && warn {
-        let files = b.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        let files: Vec<String> = b
+            .iter()
+            .map(|x| format!("{}", x.as_ref().display()))
+            .collect();
         info!("File `{}` found. Computation skipped.", files.join(", "));
     }
 
@@ -145,4 +144,84 @@ pub fn index_bam(bam_file: &str) {
     let n_threads = N_THREADS_READ_BAM;
     info!("Indexing `{bam_file}` (n_threads={n_threads})");
     _ = bam::index::build(bam_file, None, bam::index::Type::Bai, n_threads as u32)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use filetime::FileTime;
+    use std::fs::{write, File};
+    use std::time::{Duration, SystemTime};
+    use tempfile::TempDir;
+
+    #[test]
+    fn prefix_extracts_basename() {
+        assert_eq!(prefix("/tmp/foo/bar.baz"), "bar.baz");
+    }
+
+    #[test]
+    fn prefix_until_dot_truncates_correctly() {
+        assert_eq!(prefix_until_dot("/tmp/foo/bar.baz"), "bar");
+        assert_eq!(prefix_until_dot("no_dot"), "no_dot"); // no dot
+    }
+
+    #[test]
+    fn sh_success_returns_true() {
+        assert!(sh("true"));
+    }
+
+    #[test]
+    fn sh_failure_returns_false() {
+        assert!(!sh("exit 1"));
+    }
+
+    fn touch(path: &Path, offset_secs: i64) {
+        // Helper to set mtime relative to now
+        let now = SystemTime::now()
+            .checked_add(Duration::from_secs(offset_secs.unsigned_abs()))
+            .unwrap();
+        let ft = FileTime::from_system_time(now);
+        filetime::set_file_times(path, ft, ft).unwrap();
+    }
+
+    #[test]
+    fn need_update_when_target_missing() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src");
+        File::create(&src).unwrap();
+        let missing = dir.path().join("missing");
+        assert!(need_update(&[&src], &[&missing], false));
+    }
+
+    #[test]
+    fn need_update_when_target_is_zero_bytes() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src");
+        let tgt = dir.path().join("tgt");
+        write(&src, b"data").unwrap();
+        File::create(&tgt).unwrap(); // zero length
+        assert!(need_update(&[&src], &[tgt], false));
+    }
+
+    #[test]
+    fn need_update_when_source_newer_than_target() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src");
+        let tgt = dir.path().join("tgt");
+        write(&src, b"old").unwrap();
+        touch(&src, -10); // 10 s ago
+        write(&tgt, b"new").unwrap(); // newer
+        assert!(need_update(&[&src], &[tgt], false));
+    }
+
+    #[test]
+    fn need_update_false_when_up_to_date() {
+        let dir = TempDir::new().unwrap();
+        let src = dir.path().join("src");
+        let tgt = dir.path().join("tgt");
+        write(&tgt, b"old").unwrap();
+        touch(&tgt, -10); // 10 s ago
+        write(&src, b"new").unwrap(); // newer
+        assert!(!need_update(&[&src], &[tgt], false));
+    }
 }
