@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// A runner that processes BAM files with a basic read filter
-pub(crate) type Runner = ParGranges<WindowProcessor<BasicReadFilter>>;
+pub type Runner = ParGranges<WindowProcessor<BasicReadFilter>>;
 
 /// One BED-style line per fixed-size bin
 #[derive(Debug, Deserialize, Serialize)]
-pub(crate) struct BedRecord {
+pub struct BedRecord {
     pub chrom: String,
     pub start: u32,
     pub end: u32,
@@ -20,7 +20,7 @@ pub(crate) struct BedRecord {
 }
 
 /// A struct that holds the filter values that will be used to implement `ReadFilter`
-pub(crate) struct BasicReadFilter {
+pub struct BasicReadFilter {
     include_flags: u16,
     exclude_flags: u16,
     min_mapq: u8,
@@ -39,7 +39,7 @@ impl ReadFilter for BasicReadFilter {
 }
 
 /// Processor that collapses pile-ups into fixed-width windows
-pub(crate) struct WindowProcessor<F: ReadFilter> {
+pub struct WindowProcessor<F: ReadFilter> {
     /// An indexed bamfile to query for the region we were passed
     pub bam: PathBuf,
     /// Size of the bins to collapse the region into
@@ -91,7 +91,7 @@ impl<F: ReadFilter> RegionProcessor for WindowProcessor<F> {
 }
 
 /// Create a new runner for processing BAM files with a basic read filter
-pub(crate) fn get_runner(bam: &str, bin_size: u32) -> Runner {
+pub fn get_runner(bam: &str, bin_size: u32) -> Runner {
     let bam = PathBuf::from(bam);
     // Create the read filter
     let read_filter = BasicReadFilter {
