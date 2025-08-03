@@ -1,4 +1,4 @@
-use crate::depth::{get_runner, BedRecord};
+use crate::tools::depth::{get_runner, BedRecord};
 use crate::utils::{index_bam, need_update, prefix_until_dot, BINSIZE, CHAIN_DISTANCE};
 use clap::Parser;
 use log::info;

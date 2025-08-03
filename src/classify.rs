@@ -1,4 +1,4 @@
-use crate::info::{load_kmer_db, map_kmer_to_file};
+use crate::tools::info::{load_kmer_db, map_kmer_to_file};
 use crate::utils::{prefix, ClassifyResults, SingletonKmers};
 
 use clap::Parser;

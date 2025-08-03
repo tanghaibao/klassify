@@ -1,14 +1,14 @@
 use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
-use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
 use klassify::extract;
-use klassify::extract_bam;
-use klassify::info;
 use klassify::regions;
-use klassify::sort_bam;
+use klassify::tools::breakpoint;
+use klassify::tools::extract_bam;
+use klassify::tools::info;
+use klassify::tools::sort_bam;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about=None)]
