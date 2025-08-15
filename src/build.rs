@@ -112,3 +112,127 @@ fn get_kmers(seq_record: &SeqRecord, kmer_size: u8) -> HashSet<u64> {
     info!("{}: {} kmers found", seq_record.id, kmer_set.len());
     kmer_set
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bincode::{config, decode_from_std_read};
+    use std::fs::{self, File};
+    use std::io::BufReader;
+    use std::path::{Path, PathBuf};
+    use tempfile::tempdir;
+
+    /// Write a small FASTA file into `dir` and return its path.
+    fn write_fasta(dir: &Path, name: &str, contents: &str) -> PathBuf {
+        let p = dir.join(name);
+        fs::write(&p, contents).expect("write fasta");
+        p
+    }
+
+    #[test]
+    fn test_get_kmers_canonicalization() {
+        // Sequence contains both ACG and its RC (CGT); with k=3 and canonical=true,
+        // these should collapse to a single k-mer in the set, and similarly CGC/GCG collapse.
+        let rec = SeqRecord {
+            id: "x".to_string(),
+            seq: b"ACGCGT".to_vec(),
+        };
+        let set = get_kmers(&rec, 3);
+        // 6bp sequence, 4 windows, but canonical pairs collapse => {ACG, CGC} = 2
+        assert_eq!(
+            set.len(),
+            2,
+            "canonicalized 3-mers should collapse RC pairs"
+        );
+    }
+
+    #[test]
+    fn test_build_finds_singletons_and_writes_bincode() {
+        let tmp = tempdir().expect("tmpdir");
+        let out = tmp.path().join("kmers.bc");
+
+        // File 1 has two records; File 2 has one record.
+        // With k=3 (canonical), the only global singleton should be TAA (present only in r2).
+        let f1 = write_fasta(
+            tmp.path(),
+            "a.fa",
+            r#">r1
+ACGTAC
+>r2
+ACGTAA
+"#,
+        );
+        let f2 = write_fasta(
+            tmp.path(),
+            "b.fa",
+            r#">r3
+ACGTAC
+"#,
+        );
+
+        let fasta_files = vec![
+            f1.to_string_lossy().to_string(),
+            f2.to_string_lossy().to_string(),
+        ];
+
+        // Run the pipeline with k=3 to keep numbers tiny & deterministic.
+        build(&fasta_files, out.to_str().unwrap(), 3);
+
+        // The file should exist and be non-empty.
+        assert!(out.exists(), "output bincode file should be written");
+        let meta = fs::metadata(&out).expect("stat out");
+        assert!(meta.len() > 0, "output file should be non-empty");
+
+        // Decode and inspect structure/content.
+        let mut reader = BufReader::new(File::open(&out).expect("open out"));
+        let decoded: SingletonKmers =
+            decode_from_std_read(&mut reader, config::standard()).expect("bincode decode");
+
+        // Sanity checks.
+        assert_eq!(decoded.kmer_size, 3, "kmer_size should be what we passed");
+        assert_eq!(
+            decoded.ids.len(),
+            decoded.kmers.len(),
+            "ids and kmers should be aligned"
+        );
+        assert_eq!(
+            decoded.ids.len(),
+            3,
+            "we had 3 sequence records across the two files"
+        );
+
+        // We don't rely on record order because rayon's parallel iterator doesn't guarantee it.
+        // Instead, confirm exactly one record has a singleton and it belongs to r2.
+        let total_singletons: usize = decoded.kmers.iter().map(|v| v.len()).sum();
+        assert_eq!(
+            total_singletons, 1,
+            "there should be exactly one singleton k-mer overall"
+        );
+
+        // Find r2 and assert it holds the singleton.
+        let mut found_r2 = false;
+        for (id, kmers) in decoded.ids.iter().zip(decoded.kmers.iter()) {
+            if id == "r2" {
+                found_r2 = true;
+                assert_eq!(kmers.len(), 1, "r2 should have the only singleton (TAA)");
+            } else {
+                assert!(
+                    kmers.is_empty(),
+                    "records other than r2 should have zero singletons"
+                );
+            }
+        }
+        assert!(found_r2, "decoded ids should include r2");
+    }
+
+    #[test]
+    fn test_buildargs_parse_defaults() {
+        // Check that clap defaults match the constants.
+        let args = BuildArgs::parse_from(["prog", "a.fa", "b.fa"]);
+        assert_eq!(args.output_file, SINGLETON_KMERS);
+        assert_eq!(args.kmer_size, KMER_SIZE);
+        assert_eq!(args.fasta_files.len(), 2);
+        assert!(args.fasta_files.contains(&"a.fa".to_string()));
+        assert!(args.fasta_files.contains(&"b.fa".to_string()));
+    }
+}
