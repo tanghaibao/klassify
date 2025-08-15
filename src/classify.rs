@@ -6,7 +6,7 @@ use log::{error, info};
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{create_dir_all, rename, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::Path;
 
@@ -46,7 +46,7 @@ pub fn classify(
         .map(|reads_file| classify_one(&singleton_kmers, &kmer_to_file, reads_file))
         .collect::<Vec<_>>();
     // Move output files to the output directory
-    std::fs::create_dir_all(output_dir).expect("valid output directory");
+    create_dir_all(output_dir).expect("valid output directory");
     let new_output_files = output_files
         .iter()
         .map(|output_file| {
@@ -54,7 +54,7 @@ pub fn classify(
         })
         .collect::<Vec<_>>();
     for (output_file, new_output_file) in output_files.iter().zip(new_output_files.iter()) {
-        std::fs::rename(output_file, new_output_file).expect("valid rename");
+        rename(output_file, new_output_file).expect("valid rename");
     }
     info!(
         "Moved {} read classification to `{}`",
