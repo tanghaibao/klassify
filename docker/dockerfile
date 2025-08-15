@@ -1,0 +1,15 @@
+# ---------- Dockerfile ----------
+FROM condaforge/miniforge3:latest
+
+# Add Bioconda channel (conda-forge is already the highest-priority channel)
+RUN conda config --add channels bioconda && \
+    conda install -y pbccs && \
+    # remove package caches & unused index data (saves ~250 MB)
+    conda clean -afy
+
+# If you prefer micromamba over conda, comment out the three lines above
+# and substitute: `mamba install -y pbccs=${PBCCS_VER}`
+
+# Default command when the container is run
+ENTRYPOINT ["ccs"]
+

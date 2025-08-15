@@ -78,8 +78,6 @@ def main():
         region = f"{left} {right}"
         fasta_file = f"{crossover_id}.fasta"
         ban = set()
-        if crossover_id == "9208-So-02":
-            ban = {"m84072_230515_103837_s3/220072159/ccs", "m84072_230515_103837_s3/165938098/ccs"}
         write_aligned_fasta(region, ban, fasta_file)
         cmd = (
             f"clustalo -i {fasta_file} -o {fasta_file}.aln  --outfmt clu --force --full"
