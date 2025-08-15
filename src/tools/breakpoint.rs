@@ -60,7 +60,7 @@ fn breakpoint_one(
                     id,
                     pos,
                     pos + kmer_size as usize,
-                    prefix_until_dot(&singleton_kmers.fasta_files[file_index]),
+                    prefix_until_dot(&singleton_kmers.ids[file_index]),
                     kmer.0
                 );
                 writeln!(writer, "{to_write}").unwrap();

@@ -3,8 +3,7 @@
 # 1. Create a database of unique kmers from the parental genomes
 cd examples || exit 1
 mkdir -p ref f1_reads f1_classify parent_reads parent_classify
-faSplit byname parents.genome.fa ref/
-klassify build ref/*.fa -o kmers.bc
+klassify build parents.genome.fa -o kmers.bc
 
 # 2. Classify the progeny (e.g. F1) reads based on the unique kmers
 faSplit about f1_reads.fa 2000000000 f1_reads/

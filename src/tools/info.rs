@@ -46,7 +46,7 @@ pub fn info(bincode_file: &str) {
         "Number of kmers: {}",
         singleton_kmers.kmers.iter().map(|x| x.len()).sum::<usize>()
     );
-    for (i, fasta_file) in singleton_kmers.fasta_files.iter().enumerate() {
+    for (i, fasta_file) in singleton_kmers.ids.iter().enumerate() {
         println!(
             "  {}: {} ({} mers)",
             i + 1,
