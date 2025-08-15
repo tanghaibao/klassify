@@ -85,7 +85,7 @@ pub fn classify(
         writer,
         "ID\tLength\tKmers\tClassification\t{}\tLabel",
         singleton_kmers
-            .fasta_files
+            .ids
             .iter()
             .map(|count| count.to_string())
             .collect::<Vec<_>>()
@@ -123,7 +123,7 @@ fn classify_one(
         writer,
         "ID\tLength\tKmers\tClassification\t{}",
         singleton_kmers
-            .fasta_files
+            .ids
             .iter()
             .map(|count| count.to_string())
             .collect::<Vec<_>>()
@@ -155,7 +155,7 @@ fn classify_one(
             seq_len: record.seq().len(),
             counts,
         };
-        let tag = results.tag(&singleton_kmers.fasta_files);
+        let tag = results.tag(&singleton_kmers.ids);
         let to_write = format!(
             "{}\t{}\t{}\t{}\t{}",
             results.id,

@@ -22,14 +22,14 @@ const N_THREADS_READ_BAM: usize = 32;
 #[derive(Decode, Encode)]
 pub struct SingletonKmers {
     pub kmer_size: u8,
-    pub fasta_files: Vec<String>,
+    pub ids: Vec<String>,
     pub kmers: Vec<Vec<u64>>,
 }
 
 impl SingletonKmers {
     #[inline]
     pub fn n(&self) -> usize {
-        self.fasta_files.len()
+        self.ids.len()
     }
 }
 

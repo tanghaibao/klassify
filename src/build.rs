@@ -1,4 +1,4 @@
-use crate::utils::{prefix_until_dot, SingletonKmers};
+use crate::utils::SingletonKmers;
 use bincode::{config, encode_into_std_write};
 use clap::Parser;
 use log::info;
@@ -27,11 +27,21 @@ pub struct BuildArgs {
     pub kmer_size: u8,
 }
 
+/// Sequence records with an ID and sequence
+struct SeqRecord {
+    pub id: String,
+    pub seq: Vec<u8>,
+}
+
 /// Convert FASTA files to singleton k-mers
 pub fn build(fasta_files: &Vec<String>, output_file: &str, kmer_size: u8) {
-    let all_sets = fasta_files
+    let all_records = fasta_files
         .par_iter()
-        .map(|fasta_file| get_kmers(fasta_file, kmer_size))
+        .flat_map(|fasta_file| get_sequences(fasta_file))
+        .collect::<Vec<_>>();
+    let all_sets = all_records
+        .par_iter()
+        .map(|seq_record| get_kmers(seq_record, kmer_size))
         .collect::<Vec<_>>();
     // Identify all the kmers that appear once and only once in all the files
     let mut kmer_counts = HashMap::new();
@@ -47,31 +57,31 @@ pub fn build(fasta_files: &Vec<String>, output_file: &str, kmer_size: u8) {
         .map(|(kmer, _)| kmer)
         .collect::<HashSet<_>>();
     info!("Singleton kmers: {}", singleton_kmers.len());
+    let ids = all_records
+        .iter()
+        .map(|seq_record| seq_record.id.clone())
+        .collect::<Vec<_>>();
     // Find the unique kmers in each file
-    let singletons = (fasta_files, all_sets)
+    let kmers = (all_records, all_sets)
         .into_par_iter()
-        .map(|(fasta_file, kmer_set)| {
+        .map(|(seq_record, kmer_set)| {
             let singleton_kmers_per_file = kmer_set
                 .intersection(&singleton_kmers)
                 .cloned()
                 .collect::<Vec<_>>();
             info!(
                 "{}: {} singleton kmers found",
-                fasta_file,
+                seq_record.id,
                 singleton_kmers_per_file.len()
             );
             singleton_kmers_per_file
         })
         .collect::<Vec<_>>();
-    let fasta_files = fasta_files
-        .iter()
-        .map(|x| prefix_until_dot(x))
-        .collect::<Vec<_>>();
     // Serialize the singleton kmers to a file
     let singleton_kmers = SingletonKmers {
         kmer_size,
-        fasta_files,
-        kmers: singletons,
+        ids,
+        kmers,
     };
     let mut writer = BufWriter::new(File::create(output_file).unwrap());
     encode_into_std_write(&singleton_kmers, &mut writer, config::standard())
@@ -80,16 +90,25 @@ pub fn build(fasta_files: &Vec<String>, output_file: &str, kmer_size: u8) {
 }
 
 /// Get kmers from a FASTA file
-fn get_kmers(fasta_file: &str, kmer_size: u8) -> HashSet<u64> {
+fn get_sequences(fasta_file: &str) -> Vec<SeqRecord> {
     let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA file");
-    let mut kmer_set = HashSet::new();
+    let mut records = Vec::new();
     while let Some(record) = reader.next() {
         let record = record.expect("valid record");
-        let seq = record.normalize(false);
-        for (_, kmer, _) in seq.bit_kmers(kmer_size, true) {
-            kmer_set.insert(kmer.0);
-        }
+        let id = String::from_utf8(record.id().to_vec()).expect("valid UTF-8");
+        let seq = record.normalize(false).to_vec();
+        records.push(SeqRecord { id, seq });
     }
-    info!("{}: {} kmers found", fasta_file, kmer_set.len());
+    info!("{}: {} records found", fasta_file, records.len());
+    records
+}
+
+/// Get kmers from a FASTA file
+fn get_kmers(seq_record: &SeqRecord, kmer_size: u8) -> HashSet<u64> {
+    let mut kmer_set = HashSet::new();
+    for (_, kmer, _) in seq_record.seq.bit_kmers(kmer_size, true) {
+        kmer_set.insert(kmer.0);
+    }
+    info!("{}: {} kmers found", seq_record.id, kmer_set.len());
     kmer_set
 }
