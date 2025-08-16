@@ -68,7 +68,11 @@ impl<F: ReadFilter> RegionProcessor for WindowProcessor<F> {
         for pile in rdr.pileup() {
             let pile = pile.unwrap();
             let pileup = PileupPosition::from_pileup(pile, &header, &self.read_filter, None);
-            let idx = ((pileup.pos - start) / bin) as usize;
+            let pos = pileup.pos;
+            if pos < start || pos >= stop {
+                continue; // skip positions outside the region
+            }
+            let idx = ((pos - start) / bin) as usize;
             sum[idx] += pileup.depth as u64; // accumulate depth
             cov[idx] += 1;
         }
