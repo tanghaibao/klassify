@@ -19,7 +19,7 @@ Requirements:
   - If --chain is NOT supplied: minimap2 and transanno must be in PATH.
 
 Example:
-  python mosaic_liftover.py \
+  python build_mosaic.py \
     --faA A.fa --faB B.fa \
     --out-prefix results/run1 \
     --chain precomputed.chain \
@@ -28,8 +28,6 @@ Example:
 
 import argparse
 import os
-import shutil
-import subprocess
 
 from typing import List, Tuple
 
@@ -37,6 +35,7 @@ import numpy as np
 
 from liftover import ChainFile
 from pyfaidx import Fasta
+from utils import check_tool, run
 
 
 def read_first_record(fa_path: str) -> Tuple[str, str]:
@@ -60,14 +59,6 @@ def write_fasta(path: str, header: str, seq: str, width: int = 60):
             fw.write(seq[i : i + width] + "\n")
 
 
-def ensure_tool(name: str):
-    """
-    Ensure a tool is in the PATH.
-    """
-    if shutil.which(name) is None:
-        raise RuntimeError(f"Required tool '{name}' not found in PATH")
-
-
 def run_minimap2_paf(faA: str, faB: str, threads: int, out_paf: str):
     """
     Produce a PAF mapping A (query) -> B (target) with CIGAR/CS; suitable for
@@ -75,7 +66,7 @@ def run_minimap2_paf(faA: str, faB: str, threads: int, out_paf: str):
     """
     cmd = ["minimap2", "-cx", "asm5", "--cs", "-t", str(threads), faB, faA]
     with open(out_paf, "w", encoding="utf-8") as out:
-        subprocess.run(cmd, check=True, stdout=out)
+        run(cmd, stdout=out)
 
 
 def paf_to_chain_with_transanno(paf: str, out_chain: str):
@@ -83,7 +74,7 @@ def paf_to_chain_with_transanno(paf: str, out_chain: str):
     Convert PAF to UCSC chain (A -> B)
     """
     cmd = ["transanno", "minimap2chain", paf, "--output", out_chain]
-    subprocess.run(cmd, check=True)
+    run(cmd)
 
 
 def sample_breakpoints(L: int, n: int, dmin: int, seed: int) -> List[int]:
@@ -209,7 +200,7 @@ def main():
         "--min-distance",
         type=int,
         default=1_000_000,
-        help="Minimum spacing between A breakpoints (bp)",
+        help="Minimum spacing between A breakpoints (default: %(default)s bp)",
     )
     ap.add_argument(
         "--n", type=int, default=4, help="Number of breakpoints to simulate"
@@ -229,8 +220,8 @@ def main():
         if not os.path.exists(chain_path):
             raise FileNotFoundError(f"--chain file not found: {chain_path}")
     else:
-        ensure_tool("minimap2")
-        ensure_tool("transanno")
+        check_tool("minimap2")
+        check_tool("transanno")
         out_paf = args.out_prefix + ".paf"
         chain_path = args.out_prefix + ".chain"
         run_minimap2_paf(args.faA, args.faB, args.threads, out_paf)
