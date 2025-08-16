@@ -98,7 +98,7 @@ klassify regions f1_classify.bam parent_classify.bam
 ```
 
 That's it! The breakpoint locations in the parental genomes are in
-`f1_classify.regions.bed.regions.tsv`, where column 2 shows the supported
+`f1_classify.regions.tsv`, where column 2 shows the supported
 depth within each consecutive 10kb bin around the breakpoint (by default: at
 least 5 supported reads):
 

@@ -152,7 +152,8 @@ fn process_bedfiles(
     }
 
     let prefix = Path::new(child_bed).file_stem().unwrap().to_str().unwrap();
-    let poi_tsv = format!("{prefix}.poi.tsv");
+    let pf = prefix_until_dot(prefix);
+    let poi_tsv = format!("{pf}.poi.tsv");
 
     let mut kf_writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
@@ -190,7 +191,7 @@ fn process_bedfiles(
     }
 
     // Write the merged regions to a file
-    let regions_file = format!("{prefix}.regions.tsv");
+    let regions_file = format!("{pf}.regions.tsv");
     let mut counter = HashMap::new();
 
     let mut regions_writer = BufWriter::new(File::create(&regions_file).unwrap());
