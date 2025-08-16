@@ -41,7 +41,7 @@ pub fn map_kmer_to_file(singleton_kmers: &SingletonKmers) -> HashMap<u64, usize>
 pub fn info(bincode_file: &str) {
     let singleton_kmers = load_kmer_db(bincode_file);
     println!("Kmer size: {}", singleton_kmers.kmer_size);
-    println!("Number of fasta files: {}", singleton_kmers.n());
+    println!("Number of FASTAs: {}", singleton_kmers.n());
     println!(
         "Number of kmers: {}",
         singleton_kmers.kmers.iter().map(|x| x.len()).sum::<usize>()
