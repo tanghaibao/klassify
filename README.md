@@ -71,7 +71,7 @@ klassify build ref/*.fa -o kmers.bc
 
 This generates an index for all the unique kmers (present in a single contig/chromosome).
 
-2. Classify the progeny (e.g. F1) reads based on the unique kmers, , extract the reads that are classified as ‘chimeric’
+2. Classify the progeny (e.g. F1) reads based on the unique kmers, extract the reads that are classified as ‘chimeric’
    and map them to the parents reference
 
 ```console
