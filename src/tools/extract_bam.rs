@@ -27,8 +27,10 @@ pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
     let output_file = region_file.to_string() + ".extracted.fasta";
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     let mut seen = HashSet::new();
-    for region in regions {
-        let region = region.split(':').collect::<Vec<&str>>();
+    for row in regions {
+        // Get first tab-separated column as region
+        let field = row.split('\t').next().expect("valid region");
+        let region = field.split(':').collect::<Vec<&str>>();
         let chrom = region[0];
         let region = region[1].split('-').collect::<Vec<&str>>();
         let start = region[0].parse::<i32>().expect("valid start position");
