@@ -20,40 +20,13 @@ Two helper scripts (provide via --scripts-dir or absolute paths):
 
 from __future__ import annotations
 import argparse
-import shutil
-import subprocess as sp
 from pathlib import Path
 import sys
 
-from jcvi.apps.base import logger, need_update
+from simulate.utils import check_tool, run, run_pipe
+from jcvi.apps.base import logger, mkdir, need_update
 
 DEFAULT_SCRIPT_PATH = Path(__file__).parent
-
-
-def check_tool(name: str):
-    if shutil.which(name) is None:
-        raise RuntimeError(f"Required tool '{name}' not found in PATH")
-
-
-def run(cmd, *, cwd=None, stdout=None, stdin=None):
-    logger.info("RUN: %s", " ".join(map(str, cmd)))
-    sp.run(cmd, cwd=cwd, stdin=stdin, stdout=stdout, check=True)
-
-
-def run_pipe(cmd1, cmd2, *, cwd=None, stdout_path: Path | None = None):
-    logger.info("PIPE: %s | %s", " ".join(map(str, cmd1)), " ".join(map(str, cmd2)))
-    p1 = sp.Popen(cmd1, cwd=cwd, stdout=sp.PIPE)
-    with open(stdout_path, "wb") as fh:
-        p2 = sp.Popen(cmd2, cwd=cwd, stdin=p1.stdout, stdout=fh)
-        p1.stdout.close()
-        rc1 = p1.wait()
-        rc2 = p2.wait()
-        if rc1 != 0 or rc2 != 0:
-            raise RuntimeError(f"Pipeline failed (rc1={rc1}, rc2={rc2})")
-
-
-def ensure_dir(p: Path):
-    p.mkdir(parents=True, exist_ok=True)
 
 
 def main():
@@ -111,13 +84,13 @@ def main():
         check_tool(tool)
 
     work = args.workdir.resolve()
-    ensure_dir(work)
+    mkdir(work)
 
     # paths
     f1_out_dir = work / "f1_classify"
     parent_out_dir = work / "parent_classify"
-    ensure_dir(f1_out_dir)
-    ensure_dir(parent_out_dir)
+    mkdir(f1_out_dir)
+    mkdir(parent_out_dir)
 
     kmers_bc = args.kmers.resolve() if args.kmers else (work / "kmers.bc")
 
