@@ -1,10 +1,11 @@
 use crate::tools::info::{load_kmer_db, map_kmer_to_file};
-use crate::utils::{prefix, prefix_until_dot, SingletonKmers};
+use crate::utils::{prefix_until_dot, SingletonKmers};
 
 use clap::Parser;
 use log::info;
 use needletail::{parse_fastx_file, Sequence};
 use rayon::prelude::*;
+use std::path::Path;
 use std::{
     collections::HashMap,
     fs::File,
@@ -36,8 +37,7 @@ fn breakpoint_one(
 ) {
     // Classify the reads
     let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA file");
-    let file_prefix = prefix(fasta_file);
-    let output_file = file_prefix.to_string() + ".classifications.bed";
+    let output_file = Path::new(fasta_file).with_extension("bed");
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     info!("Parsing reference");
 
@@ -67,5 +67,8 @@ fn breakpoint_one(
             }
         }
     }
-    info!("Classifications written to `{}`", output_file);
+    info!(
+        "Classifications written to `{}`",
+        output_file.as_path().display()
+    );
 }

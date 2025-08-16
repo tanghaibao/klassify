@@ -43,7 +43,7 @@ Additional dependencies include:
 
 - [`minimap2`](https://github.com/lh3/minimap2)
 - [`samtools`](https://github.com/samtools/samtools)
-- [`faSplit`](https://hgdownload.soe.ucsc.edu/admin/exe/)
+- [`faSplit`](https://hgdownload.soe.ucsc.edu/admin/exe/) (optional)
 
 ## Supported Operating systems
 
@@ -71,32 +71,26 @@ klassify build ref/*.fa -o kmers.bc
 
 This generates an index for all the unique kmers (present in a single contig/chromosome).
 
-2. Classify the progeny (e.g. F1) reads based on the unique kmers
+2. Classify the progeny (e.g. F1) reads based on the unique kmers, extract the reads that are classified as ‘chimeric’
+   and map them to the parents reference
 
 ```console
-faSplit about f1_reads.fa 2000000000 f1_reads/
-klassify classify kmers.bc f1_reads/*.fa -o f1_classify
-```
-
-3. Map ‘chimeric’ progeny reads to the parents reference
-
-```console
-klassify extract f1_classify.filtered.tsv f1_reads/*.fa -o f1_classify.fa
+klassify classify kmers.bc f1_reads.fa -o f1_classify
+klassify extract f1_classify.filtered.tsv f1_reads.fa -o f1_classify.fa
 minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.fa \
-    --split-prefix f1_classify | samtools sort -@ 8 -o f1_classify.bam
+    | samtools sort -@ 8 -o f1_classify.bam
 ```
 
-4. Repeat the steps using the parental reads
+3. Repeat the steps using the parental reads
 
 ```console
-faSplit about parent_reads.fa 2000000000 parent_reads/
-klassify classify kmers.bc parent_reads/*.fa -o parent_classify
-klassify extract parent_classify.filtered.tsv parent_reads/*.fa -o parent_classify.fa
+klassify classify kmers.bc parent_reads.fa -o parent_classify
+klassify extract parent_classify.filtered.tsv parent_reads.fa -o parent_classify.fa
 minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classify.fa \
-    --split-prefix parent_classify | samtools sort -@ 8 -o parent_classify.bam
+    | samtools sort -@ 8 -o parent_classify.bam
 ```
 
-5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
+4. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
    reads (so we are not affected by assembly errors)
 
 ```console
@@ -104,7 +98,7 @@ klassify regions f1_classify.bam parent_classify.bam
 ```
 
 That's it! The breakpoint locations in the parental genomes are in
-`f1_classify.regions.bed.regions.tsv`, where column 2 shows the supported
+`f1_classify.regions.tsv`, where column 2 shows the supported
 depth within each consecutive 10kb bin around the breakpoint (by default: at
 least 5 supported reads):
 

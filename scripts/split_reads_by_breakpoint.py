@@ -18,20 +18,21 @@ KMER_THRESHOLD = 30
 def main(args: List[str]):
     p = OptionParser(main.__doc__)
     _, args = p.parse_args(args)
-    if len(args) != 2:
+    if len(args) != 1:
         sys.exit(not p.print_help())
 
-    bedfile, fastafile = args
+    (fastafile,) = args
+    bedfile = fastafile.replace(".fasta", ".bed")
     fasta = Fasta(fastafile)
     bed = Bed(bedfile)
     new_fastafile = bedfile.replace(".gz", "").rsplit(".", 1)[0] + ".split.fasta"
-    counter = Counter()
+    counter: Counter[str] = Counter()
     with open(new_fastafile, "w", encoding="utf-8") as new_fasta:
         for read, sb in bed.sub_beds():
             ret = get_breakpoint(read, sb, fasta, new_fasta)
             counter[ret] += 1
     logger.info("Summary: %s", counter)
-    logger.info("Split fasta file written to `{}`".format(new_fastafile))
+    logger.info("Split fasta file written to `%s`", new_fastafile)
 
 
 def get_breakpoint(

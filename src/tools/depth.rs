@@ -62,7 +62,6 @@ impl<F: ReadFilter> RegionProcessor for WindowProcessor<F> {
         let bin = self.bin_size;
         let n_bins = (stop - start).div_ceil(bin) as usize; // ceil div
         let mut sum = vec![0u64; n_bins]; // cumulative depth per bin
-        let mut cov = vec![0u32; n_bins]; // # positions seen in bin
 
         // Stream pile-up once
         for pile in rdr.pileup() {
@@ -74,7 +73,6 @@ impl<F: ReadFilter> RegionProcessor for WindowProcessor<F> {
             }
             let idx = ((pos - start) / bin) as usize;
             sum[idx] += pileup.depth as u64; // accumulate depth
-            cov[idx] += 1;
         }
 
         // Convert to BED records
