@@ -102,8 +102,8 @@ def main():
     ap.add_argument(
         "--out-root",
         type=Path,
-        default=Path("."),
-        help="Where to create A_B/ dirs (default: .)",
+        default=Path("mosaics"),
+        help="Where to create A_B/ dirs (default: %(default)s)",
     )
     ap.add_argument(
         "--jobs", type=int, default=8, help="Parallel jobs (default: %(default)s)"
