@@ -190,7 +190,7 @@ def main():
         "--chain",
         help="Precomputed UCSC chain file mapping A->B. If provided, minimap2/transanno are skipped.",
     )
-    ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--threads", type=int, default=16)
     ap.add_argument(
         "--min-distance",
         type=int,
@@ -200,26 +200,51 @@ def main():
     ap.add_argument(
         "--n", type=int, default=4, help="Number of breakpoints to simulate"
     )
-    ap.add_argument("--seed", type=int, default=13)
+    ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
-    chromA, seqA = read_first_record(args.faA)
-    chromB, seqB = read_first_record(args.faB)
+    build_mosaic(
+        args.faA,
+        args.faB,
+        args.out_prefix,
+        args.chain,
+        args.threads,
+        args.min_distance,
+        args.n,
+        args.seed,
+    )
 
-    out_tsv = args.out_prefix + ".breakpoints.tsv"
-    out_fa = args.out_prefix + ".mosaic.fa"
+
+def build_mosaic(
+    faA: str,
+    faB: str,
+    out_prefix: str,
+    chain: str | None,
+    threads: int,
+    min_distance: int,
+    n: int,
+    seed: int,
+):
+    """
+    Build a mosaic from a pair of FASTA files.
+    """
+    chromA, seqA = read_first_record(faA)
+    chromB, seqB = read_first_record(faB)
+
+    out_tsv = out_prefix + ".breakpoints.tsv"
+    out_fa = out_prefix + ".mosaic.fa"
 
     # Get or make chain
-    if args.chain:
-        chain_path = args.chain
+    if chain:
+        chain_path = chain
         if not os.path.exists(chain_path):
             raise FileNotFoundError(f"--chain file not found: {chain_path}")
     else:
         check_tool("minimap2")
         check_tool("transanno")
-        out_paf = args.out_prefix + ".paf"
-        chain_path = args.out_prefix + ".chain"
-        run_minimap2_paf(args.faA, args.faB, args.threads, out_paf)
+        out_paf = out_prefix + ".paf"
+        chain_path = out_prefix + ".chain"
+        run_minimap2_paf(faA, faB, threads, out_paf)
         paf_to_chain_with_transanno(out_paf, chain_path)
 
     # Load liftover converter
@@ -231,9 +256,9 @@ def main():
         chromA=chromA,
         chromB_target=chromB,
         L=len(seqA),
-        n=int(args.n),
-        dmin=int(args.min_distance),
-        seed=int(args.seed),
+        n=int(n),
+        dmin=int(min_distance),
+        seed=int(seed),
     )
 
     # Write TSV of A/B breakpoints (0-based)
@@ -245,7 +270,7 @@ def main():
 
     # Build mosaic (alternate A/B between breakpoints)
     mosaic = build_mosaic_alternate(seqA, seqB, a_breaks, b_breaks)
-    write_fasta(out_fa, header=os.path.basename(args.out_prefix), seq=mosaic)
+    write_fasta(out_fa, header=os.path.basename(out_prefix), seq=mosaic)
 
 
 if __name__ == "__main__":
