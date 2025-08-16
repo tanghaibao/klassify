@@ -19,7 +19,7 @@ Requirements:
   - If --chain is NOT supplied: minimap2 and transanno must be in PATH.
 
 Example:
-  python mosaic_liftover.py \
+  python build_mosaic.py \
     --faA A.fa --faB B.fa \
     --out-prefix results/run1 \
     --chain precomputed.chain \
