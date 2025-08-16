@@ -71,30 +71,26 @@ klassify build ref/*.fa -o kmers.bc
 
 This generates an index for all the unique kmers (present in a single contig/chromosome).
 
-2. Classify the progeny (e.g. F1) reads based on the unique kmers
+2. Classify the progeny (e.g. F1) reads based on the unique kmers, , extract the reads that are classified as ‘chimeric’
+   and map them to the parents reference
 
 ```console
 klassify classify kmers.bc f1_reads.fa -o f1_classify
-```
-
-3. Map ‘chimeric’ progeny reads to the parents reference
-
-```console
 klassify extract f1_classify.filtered.tsv f1_reads.fa -o f1_classify.fa
 minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.fa \
-    --split-prefix f1_classify | samtools sort -@ 8 -o f1_classify.bam
+    | samtools sort -@ 8 -o f1_classify.bam
 ```
 
-4. Repeat the steps using the parental reads
+3. Repeat the steps using the parental reads
 
 ```console
 klassify classify kmers.bc parent_reads.fa -o parent_classify
 klassify extract parent_classify.filtered.tsv parent_reads.fa -o parent_classify.fa
 minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classify.fa \
-    --split-prefix parent_classify | samtools sort -@ 8 -o parent_classify.bam
+    | samtools sort -@ 8 -o parent_classify.bam
 ```
 
-5. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
+4. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
    reads (so we are not affected by assembly errors)
 
 ```console
