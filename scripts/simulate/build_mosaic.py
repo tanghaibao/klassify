@@ -180,15 +180,10 @@ def main():
     ap = argparse.ArgumentParser(
         description="Breakpoint-first mosaic using a precomputed chain (or generate one if absent)."
     )
+    ap.add_argument("faA", help="FASTA for genome A (source of breakpoints)")
+    ap.add_argument("faB", help="FASTA for genome B (target of liftover)")
     ap.add_argument(
-        "--faA", required=True, help="FASTA for genome A (source of breakpoints)"
-    )
-    ap.add_argument(
-        "--faB", required=True, help="FASTA for genome B (target of liftover)"
-    )
-    ap.add_argument(
-        "--out-prefix",
-        required=True,
+        "out_prefix",
         help="Output prefix (creates .tsv and .fa; may also create .paf/.chain if --chain not provided)",
     )
     ap.add_argument(
