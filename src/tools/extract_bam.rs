@@ -3,8 +3,9 @@ use clap::Parser;
 use log::info;
 use rust_htslib::bam::{IndexedReader, Read};
 use std::collections::HashSet;
-use std::fs::File;
+use std::fs::{read_to_string, File};
 use std::io::{BufWriter, Write};
+use std::path::Path;
 
 #[derive(Parser, Debug)]
 pub struct ExtractBamArgs {
@@ -21,10 +22,10 @@ pub struct ExtractBamArgs {
 /// Extract reads from a BAM file
 pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
     info!("Extracting reads from BAM file");
-    let regions = std::fs::read_to_string(region_file).expect("valid region file");
+    let regions = read_to_string(region_file).expect("valid region file");
     let regions: Vec<&str> = regions.lines().collect();
     let mut bam = IndexedReader::from_path(bam_file).expect("valid BAM file");
-    let output_file = region_file.to_string() + ".extracted.fasta";
+    let output_file = Path::new(region_file).with_extension("fasta");
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
     let mut seen = HashSet::new();
     for row in regions {
@@ -64,4 +65,5 @@ pub fn extract_bam(region_file: &str, bam_file: &str, flank_size: i32) {
             .expect("write to FASTA");
         }
     }
+    info!("Extracted reads written to `{}`", output_file.display());
 }
