@@ -66,7 +66,7 @@ def run_minimap2_paf(faA: str, faB: str, threads: int, out_paf: str):
     """
     cmd = ["minimap2", "-cx", "asm5", "--cs", "-t", str(threads), faB, faA]
     with open(out_paf, "w", encoding="utf-8") as out:
-        run(cmd, check=True, stdout=out)
+        run(cmd, stdout=out)
 
 
 def paf_to_chain_with_transanno(paf: str, out_chain: str):
@@ -74,7 +74,7 @@ def paf_to_chain_with_transanno(paf: str, out_chain: str):
     Convert PAF to UCSC chain (A -> B)
     """
     cmd = ["transanno", "minimap2chain", paf, "--output", out_chain]
-    run(cmd, check=True)
+    run(cmd)
 
 
 def sample_breakpoints(L: int, n: int, dmin: int, seed: int) -> List[int]:
@@ -200,7 +200,7 @@ def main():
         "--min-distance",
         type=int,
         default=1_000_000,
-        help="Minimum spacing between A breakpoints (bp)",
+        help="Minimum spacing between A breakpoints (default: %(default)s bp)",
     )
     ap.add_argument(
         "--n", type=int, default=4, help="Number of breakpoints to simulate"
