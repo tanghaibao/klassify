@@ -24,8 +24,9 @@ pub struct ClassifyArgs {
     /// Output directory
     #[clap(short, long)]
     pub output_dir: String,
-    /// Prefix length
-    #[clap(short, long, default_value_t = 7)]
+    /// Prefix length. This is useful to isolate comparisons within the same homologous group.
+    /// For example, SoChr01A and SoChr01B will be considered the same group with prefix_length=7.
+    #[clap(short, long, default_value_t = 0)]
     pub prefix_length: usize,
 }
 
