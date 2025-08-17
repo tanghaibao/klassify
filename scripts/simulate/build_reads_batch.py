@@ -49,7 +49,7 @@ def main():
         "--jobs",
         "-j",
         type=int,
-        default=10,
+        default=8,
         help="Number of parallel workers (default: %(default)d)",
     )
     parser.add_argument(
