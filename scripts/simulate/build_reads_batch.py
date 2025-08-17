@@ -49,8 +49,8 @@ def main():
         "--jobs",
         "-j",
         type=int,
-        default=8,
-        help="Number of parallel workers (default: number of CPUs)",
+        default=16,
+        help="Number of parallel workers (default: %(default)d)",
     )
     parser.add_argument(
         "--script",
