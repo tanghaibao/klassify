@@ -10,7 +10,7 @@ Equivalent to:
   pbsim --strategy wgs --method errhmm \
     --errhmm ~/code/pbsim3/data/ERRHMM-SEQUEL.model \
     --depth 50 --pass-num 10 --length-mean 15000 \
-    --prefix $PREFIX --id-prefix $PREFIX --genome $GENOME
+    --prefix $PREFIX --id-prefix ${PREFIX}_ --genome $GENOME
 
   ccs ${PREFIX}_0001.bam ${PREFIX}_0001.ccs.fastq.gz \
     --report-file ccs_report.txt --log-file ccs.log
@@ -73,6 +73,7 @@ def main():
         sys.exit(f"ERROR: Genome not found: {args.genome}")
 
     genome_dir = args.genome.parent.resolve()
+    genome = args.genome.name
     cwd = os.getcwd()
     os.chdir(genome_dir)
 
@@ -109,9 +110,9 @@ def main():
             "--prefix",
             prefix,
             "--id-prefix",
-            prefix,
+            prefix + "_",
             "--genome",
-            str(args.genome),
+            genome,
         ]
     )
 
