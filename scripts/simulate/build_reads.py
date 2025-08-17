@@ -120,7 +120,7 @@ def main():
 
     cleanup(f"{prefix}_0001.ccs.zmw_metrics.json.gz")
 
-    logger.info("\nDone.")
+    logger.info("Done.")
     logger.info("  BAM:    %s", bam_in)
     logger.info("  CCS:    %s", ccs_out)
 
