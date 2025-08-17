@@ -25,6 +25,8 @@ from pathlib import Path
 
 from utils import check_tool, run
 
+from jcvi.apps.base import cleanup, logger
+
 
 def main():
     p = argparse.ArgumentParser(description="Run pbsim + ccs pipeline.")
@@ -108,26 +110,19 @@ def main():
         ]
     )
 
+    # There are a few files that pbsim generates that we don't need
+    cleanup(f"{prefix}_0001.maf.gz", f"{prefix}_0001.ref")
+
     # Run ccs on ${PREFIX}_0001.bam
     bam_in = f"{prefix}_0001.bam"
     ccs_out = f"{prefix}_0001.ccs.fastq.gz"
-    run(
-        [
-            args.ccs,
-            bam_in,
-            ccs_out,
-            "--report-file",
-            "ccs_report.txt",
-            "--log-file",
-            "ccs.log",
-        ]
-    )
+    run([args.ccs, bam_in, ccs_out])
 
-    print("\nDone.")
-    print(f"  BAM:    {bam_in}")
-    print(f"  CCS:    {ccs_out}")
-    print("  report: ccs_report.txt")
-    print("  log:    ccs.log")
+    cleanup(f"{prefix}_0001.ccs.zmw_metrics.json.gz")
+
+    logger.info("\nDone.")
+    logger.info("  BAM:    %s", bam_in)
+    logger.info("  CCS:    %s", ccs_out)
 
 
 if __name__ == "__main__":
