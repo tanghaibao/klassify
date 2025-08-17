@@ -71,6 +71,11 @@ def main():
     # Checks
     if not args.genome.exists():
         sys.exit(f"ERROR: Genome not found: {args.genome}")
+
+    genome_dir = args.genome.parent.resolve()
+    cwd = os.getcwd()
+    os.chdir(genome_dir)
+
     check_tool(args.pbsim)
     check_tool(args.ccs)
 
@@ -123,6 +128,7 @@ def main():
     logger.info("Done.")
     logger.info("  BAM:    %s", bam_in)
     logger.info("  CCS:    %s", ccs_out)
+    os.chdir(cwd)
 
 
 if __name__ == "__main__":
