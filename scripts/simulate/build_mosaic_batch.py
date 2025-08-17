@@ -78,7 +78,7 @@ def run_one_pair(
     pair_dir = out_root / pair
     mkdir(pair_dir)
 
-    cmd = [str(fa_a), str(fa_b), str(pair_dir / pair), None, 1, min_distance, n, seed]
+    cmd = [str(fa_a), str(fa_b), str(pair_dir / pair), None, 4, min_distance, n, seed]
 
     if dry_run:
         return (" ".join(str(x) for x in cmd) + f"   (cwd={pair_dir})", 0)
