@@ -19,7 +19,7 @@ def run(cmd, *, cwd=None, stdout=None, stdin=None):
     Run a command.
     """
     logger.info("RUN: %s", " ".join(map(str, cmd)))
-    sp.run(cmd, cwd=cwd, stdin=stdin, stdout=stdout, check=True)
+    return sp.run(cmd, cwd=cwd, stdin=stdin, stdout=stdout, check=True)
 
 
 def run_pipe(cmd1, cmd2, *, cwd=None, stdout_path: Path | None = None):

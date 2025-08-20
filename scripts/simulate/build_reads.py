@@ -44,7 +44,7 @@ def main():
     p.add_argument(
         "--pass-num",
         type=int,
-        default=10,
+        default=8,
         help="pbsim --pass-num (default: %(default)s)",
     )
     p.add_argument(
@@ -122,7 +122,8 @@ def main():
     # Run ccs on ${PREFIX}_0001.bam
     bam_in = f"{prefix}_0001.bam"
     ccs_out = f"{prefix}_0001.ccs.fastq.gz"
-    run([args.ccs, bam_in, ccs_out])
+    threads = os.cpu_count() * 2 // args.jobs
+    run([args.ccs, bam_in, ccs_out, "-j", str(threads)])
 
     cleanup(f"{prefix}_0001.ccs.zmw_metrics.json.gz")
 
