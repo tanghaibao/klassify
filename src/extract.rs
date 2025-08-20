@@ -1,4 +1,4 @@
-use crate::utils::prefix;
+use crate::utils::{prefix, SEPARATOR};
 
 use clap::Parser;
 use csv::ReaderBuilder;
@@ -8,6 +8,7 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::fs::{remove_file, File};
 use std::io::Write;
+
 
 #[derive(Parser, Debug)]
 pub struct ExtractArgs {
@@ -35,7 +36,7 @@ fn get_read_ids(reads_tsv: &str) -> HashMap<String, String> {
             .get(record.len() - 1)
             .expect("valid label")
             .to_string();
-        let new_read_id = label + "_" + read_id.as_str();
+        let new_read_id = label + SEPARATOR + read_id.as_str();
         read_map.insert(read_id, new_read_id);
     }
     read_map

@@ -16,6 +16,9 @@ pub const DEFAULT_FLANK_SIZE: i32 = BINSIZE as i32;
 /// Maximum divergence
 pub const MAX_DE: f32 = 0.01; // 1%
 
+/// Separator between region and read ID
+pub(crate) const SEPARATOR: &str = "@";
+
 /// Number of threads used to read BAM files
 const N_THREADS_READ_BAM: usize = 32;
 
