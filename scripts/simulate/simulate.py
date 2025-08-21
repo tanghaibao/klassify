@@ -203,17 +203,17 @@ def main():
     os.chdir(cwd)
     logger.info("Klassify pipeline completed in `%s`.", out_dir)
 
-    # Clean up the run directory if requested
-    if args.cleanup:
-        logger.info("Cleaning up run directory `%s`.", out_dir)
-        shutil.rmtree(out_dir, ignore_errors=True)
-
     # Write results to the output directory
     prepare_output(
         config,
         args.mosaics,
         args.results_dir,
     )
+
+    # Clean up the run directory if requested
+    if args.cleanup:
+        logger.info("Cleaning up run directory `%s`.", out_dir)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
 
 if __name__ == "__main__":
