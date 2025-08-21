@@ -1,4 +1,5 @@
 import argparse
+import re
 
 import numpy as np
 import pandas as pd
@@ -52,6 +53,11 @@ def evaluate_recall_precision_by_ploidy(
     precision = (
         len(matched_precision) / len(precision_df) if len(precision_df) > 0 else 0
     )
+    median_distance = (
+        int(matched_precision["Total_distance"].median())
+        if not matched_precision.empty
+        else np.nan
+    )
     return {
         "Ploidy": ploidy,
         "Simulated": len(recalls_df),
@@ -59,45 +65,65 @@ def evaluate_recall_precision_by_ploidy(
         "Matched": len(matched_recalls),
         "Recall": recalls,
         "Precision": precision,
+        "Median dist: Truth vs. KLASSIFY": median_distance,
     }
 
 
-def parse_breakpoint(bp_str):
-    """Parse breakpoint string to extract chromosome and position"""
-    if pd.isna(bp_str) or "[REDACTED" in str(bp_str):
-        return None, None
+def parse_breakpoint_range(bp_str):
+    """
+    Parse a breakpoint string into (chrom, start, end).
 
-    try:
-        parts = str(bp_str).split(":")
-        if len(parts) != 2:
-            return None, None
+    Accepted forms:
+      - "chr1:12345"
+      - "chr1:12345-23456"
+    Returns (None, None, None) if unparsable or redacted/NaN.
+    """
+    if pd.isna(bp_str):
+        return None, None, None
+    s = str(bp_str).strip()
+    if not s or "[REDACTED" in s:
+        return None, None, None
 
-        chrom = parts[0]
-        pos_part = parts[1]
+    m = re.match(r"^([^:]+):\s*(\d+)(?:\s*-\s*(\d+))?$", s)
+    if not m:
+        return None, None, None
 
-        # Handle range format (start-end)
-        if "-" in pos_part:
-            start, end = map(int, pos_part.split("-"))
-            midpoint = (start + end) / 2
-            return chrom, midpoint
-        else:
-            pos = int(pos_part)
-            return chrom, pos
-    except:
-        return None, None
+    chrom = m.group(1)
+    start = int(m.group(2))
+    end = int(m.group(3)) if m.group(3) is not None else start
+    if start > end:
+        start, end = end, start
+    return chrom, start, end
 
 
-def calculate_distance(pos1, pos2):
-    """Calculate distance between two positions"""
-    if pos1 is None or pos2 is None:
+def range_distance(s1, e1, s2, e2):
+    """
+    Distance between two closed intervals [s1,e1] and [s2,e2].
+
+    - 0 if they overlap or touch
+    - positive gap otherwise
+    - np.inf if any endpoint is None
+    """
+    if any(v is None for v in (s1, e1, s2, e2)):
         return np.inf
-    return abs(pos1 - pos2)
+    # overlap / touching:
+    if not (e1 < s2 or e2 < s1):
+        return 0
+    # disjoint: gap is the min distance between edges
+    if e1 < s2:
+        return s2 - e1
+    else:
+        return s1 - e2
 
 
 def find_closest_true_row(computed_row, true_rows):
-    """Find the closest true row to a computed row"""
-    comp_a_chrom, comp_a_pos = parse_breakpoint(computed_row["A_breakpoint"])
-    comp_b_chrom, comp_b_pos = parse_breakpoint(computed_row["B_breakpoint"])
+    """Find the closest true row to a computed row using interval distances."""
+    comp_a_chrom, comp_a_s, comp_a_e = parse_breakpoint_range(
+        computed_row["A_breakpoint"]
+    )
+    comp_b_chrom, comp_b_s, comp_b_e = parse_breakpoint_range(
+        computed_row["B_breakpoint"]
+    )
 
     min_total_distance = np.inf
     best_match = None
@@ -105,34 +131,36 @@ def find_closest_true_row(computed_row, true_rows):
     best_b_dist = None
 
     for _, true_row in true_rows.iterrows():
-        true_a_chrom, true_a_pos = parse_breakpoint(true_row["A_breakpoint"])
-        true_b_chrom, true_b_pos = parse_breakpoint(true_row["B_breakpoint"])
+        true_a_chrom, true_a_s, true_a_e = parse_breakpoint_range(
+            true_row["A_breakpoint"]
+        )
+        true_b_chrom, true_b_s, true_b_e = parse_breakpoint_range(
+            true_row["B_breakpoint"]
+        )
 
-        # Calculate distances only for matching chromosomes
         a_dist = np.inf
         b_dist = np.inf
 
-        if comp_a_chrom == true_a_chrom:
-            a_dist = calculate_distance(comp_a_pos, true_a_pos)
+        if comp_a_chrom is not None and comp_a_chrom == true_a_chrom:
+            a_dist = range_distance(comp_a_s, comp_a_e, true_a_s, true_a_e)
 
-        if comp_b_chrom == true_b_chrom:
-            b_dist = calculate_distance(comp_b_pos, true_b_pos)
+        if comp_b_chrom is not None and comp_b_chrom == true_b_chrom:
+            b_dist = range_distance(comp_b_s, comp_b_e, true_b_s, true_b_e)
 
-        # Skip if no matching chromosomes
+        # Skip if neither chromosome matches
         if a_dist == np.inf and b_dist == np.inf:
             continue
 
-        # Calculate total distance (you can modify this logic as needed)
-        # Here I'm using the sum of distances, but you could use max, euclidean, etc.
-        total_dist = (a_dist if a_dist != np.inf else 0) + (
-            b_dist if b_dist != np.inf else 0
+        # Sum distances for the pair (treat missing side as 0)
+        total_dist = (0 if a_dist == np.inf else a_dist) + (
+            0 if b_dist == np.inf else b_dist
         )
 
         if total_dist < min_total_distance:
             min_total_distance = total_dist
             best_match = true_row
-            best_a_dist = a_dist if a_dist != np.inf else None
-            best_b_dist = b_dist if b_dist != np.inf else None
+            best_a_dist = None if a_dist == np.inf else a_dist
+            best_b_dist = None if b_dist == np.inf else b_dist
 
     return best_match, best_a_dist, best_b_dist
 
@@ -199,6 +227,9 @@ def process(df: pd.DataFrame) -> pd.DataFrame:
             results.append(result)
 
     result_df = pd.DataFrame(results)
+    result_df["A_distance"] = result_df["A_distance"].astype("Int64")
+    result_df["B_distance"] = result_df["B_distance"].astype("Int64")
+    result_df["Total_distance"] = result_df["Total_distance"].astype("Int64")
     return result_df
 
 
@@ -214,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-distance",
         type=int,
-        default=20000,
+        default=2000,
         help="Max distance for matching breakpoints.",
     )
 
