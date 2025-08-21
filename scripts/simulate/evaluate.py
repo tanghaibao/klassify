@@ -245,7 +245,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max-distance",
         type=int,
-        default=2000,
+        default=5000,
         help="Max distance for matching breakpoints.",
     )
 
