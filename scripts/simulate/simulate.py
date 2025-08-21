@@ -18,6 +18,8 @@ Procedure:
 import argparse
 import os
 import os.path as op
+import shutil
+
 import pandas as pd
 import random
 
@@ -30,7 +32,7 @@ from typing import List
 from jcvi.apps.base import logger, mkdir, sh
 from jcvi.formats.base import FileMerger
 
-DEFAULT_SCRIPT_PATH = Path(__file__).parent
+DEFAULT_SCRIPT_PATH = Path(__file__).parent.parent
 PARENTS_GENOMES = "parents.genomes.fa"
 PARENT_READS = "parent_reads.fq.gz"
 F1_READS = "f1_reads.fq.gz"
@@ -85,7 +87,7 @@ def prepare_input(config: SimulatedConfig, ref_dir: str, mosaics_dir: str):
     """
     out_dir = config.name
     mkdir(out_dir)
-    parents_genomes = op.join(out_dir, PARENT_READS)
+    parents_genomes = op.join(out_dir, PARENTS_GENOMES)
     parent_reads = op.join(out_dir, PARENT_READS)
     f1_reads = op.join(out_dir, F1_READS)
     parents = [op.join(ref_dir, f"{p}.fa") for p in config.parents]
@@ -120,26 +122,27 @@ def prepare_output(config: SimulatedConfig, mosaics_dir: str, results_dir: str):
     df = pd.concat(breakpoints, ignore_index=True)
     df["A_breakpoint"] = df["A_chrom"] + ":" + df["A_bp_0based"].astype(str)
     df["B_breakpoint"] = df["B_chrom"] + ":" + df["B_bp_0based"].astype(str)
+    df["Run"] = config.name
     df["Source"] = "true"
-    df = df[["Source", "A_breakpoint", "B_breakpoint"]]
+    columns = ["Run", "Source", "A_breakpoint", "B_breakpoint"]
+    df = df[columns]
 
     # Now get the computed breakpoints
     regions_output = op.join(out_dir, REGIONS_OUTPUT)
     if not op.exists(regions_output):
         raise FileNotFoundError(f"Regions output file not found: {regions_output}")
     rows = [x.strip() for x in open(regions_output)]
+    computed_df = []
     for a, b in batched(rows, 2):
         a_genome, b_genome = a.split("_", 1)[0], b.split("_", 1)[0]
         if f"{a_genome}_{b_genome}" not in config.gametes:
             a, b = b, a
-        df.append(
-            {
-                "Source": "computed",
-                "A_breakpoint": a,
-                "B_breakpoint": b,
-            },
-            ignore_index=True,
-        )
+        computed_df.append((a, b))
+    computed_df = pd.DataFrame(computed_df, columns=["A_breakpoint", "B_breakpoint"])
+    computed_df["Run"] = config.name
+    computed_df["Source"] = "computed"
+    computed_df = computed_df[columns]
+    df = pd.concat([df, computed_df], ignore_index=True)
 
     breakpoints_output = op.join(results_dir, f"{config.name}.breakpoints.tsv")
     df.to_csv(breakpoints_output, sep="\t", index=False)
@@ -166,6 +169,12 @@ def main():
         "--seed", type=int, default=42, help="Random seed for reproducibility."
     )
     p.add_argument(
+        "--cleanup",
+        default=False,
+        action="store_true",
+        help="Remove run dir after processing.",
+    )
+    p.add_argument(
         "--scripts-dir",
         type=Path,
         default=DEFAULT_SCRIPT_PATH,
@@ -179,11 +188,12 @@ def main():
 
     # Prepare input files for the klassify pipeline
     prepare_input(config, args.ref, args.mosaics)
-    logger.info("Input files prepared in `%s`", args.out)
+    out_dir = config.name
+    logger.info("Input files prepared in `%s`", out_dir)
 
     # Run klassify pipeline
     cwd = Path.cwd()
-    os.chdir(cwd)
+    os.chdir(cwd / out_dir)
     klassify_script = args.scripts_dir / "pipeline.py"
     if not klassify_script.exists():
         raise FileNotFoundError(f"Pipeline script not found: {klassify_script}")
@@ -191,6 +201,12 @@ def main():
     if not op.exists(REGIONS_OUTPUT):
         sh(cmd)
     os.chdir(cwd)
+    logger.info("Klassify pipeline completed in `%s`.", out_dir)
+
+    # Clean up the run directory if requested
+    if args.cleanup:
+        logger.info("Cleaning up run directory `%s`.", out_dir)
+        shutil.rmtree(out_dir, ignore_errors=True)
 
     # Write results to the output directory
     prepare_output(
