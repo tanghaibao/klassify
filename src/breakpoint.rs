@@ -80,7 +80,7 @@ fn breakpoint_one_bed(
     let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA/FASTQ");
     let output_file = Path::new(fasta_file).with_extension("bed");
     let mut writer = BufWriter::new(File::create(&output_file).unwrap());
-    info!("Parsing `{}` -> `{}`", fasta_file, output_file.display());
+    info!("Parsing `{}` → `{}`", fasta_file, output_file.display());
 
     let kmer_size = singleton_kmers.kmer_size;
     while let Some(record) = reader.next() {

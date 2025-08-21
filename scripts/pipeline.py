@@ -159,8 +159,8 @@ def main():
         )
 
     if (
-        not need_update([f1_filtered_tsv, args.f1_reads], f1_extracted_fa)
-        and not args.force
+            not need_update([f1_filtered_tsv, args.f1_reads], f1_extracted_fa)
+            and not args.force
     ):
         logger.info("F1 extract already done: %s", f1_extracted_fa)
     else:
@@ -198,8 +198,8 @@ def main():
 
     # 3) Classify parent reads (control), extract, map
     if (
-        not need_update([kmers_bc, args.parent_reads], parent_filtered_tsv)
-        and not args.force
+            not need_update([kmers_bc, args.parent_reads], parent_filtered_tsv)
+            and not args.force
     ):
         logger.info("Parent classify already done: %s", parent_filtered_tsv)
     else:
@@ -216,8 +216,8 @@ def main():
         )
 
     if (
-        not need_update([parent_filtered_tsv, args.parent_reads], parent_extracted_fa)
-        and not args.force
+            not need_update([parent_filtered_tsv, args.parent_reads], parent_extracted_fa)
+            and not args.force
     ):
         logger.info("Parent extract already done: %s", parent_extracted_fa)
     else:
@@ -234,8 +234,8 @@ def main():
         )
 
     if (
-        not need_update([parent_extracted_fa, args.parents_ref], parent_bam)
-        and not args.force
+            not need_update([parent_extracted_fa, args.parents_ref], parent_bam)
+            and not args.force
     ):
         logger.info("Parent alignment already exists: %s", parent_bam)
     else:
@@ -264,21 +264,14 @@ def main():
 
     # 5) Refine the breakpoints
     # Extract BAM segments overlapping regions
-    if not need_update([regions_tsv, f1_bam], regions_fa) and not args.force:
+    split_output = work / "f1_classify.regions.split.fasta"
+    if not need_update([regions_tsv, f1_bam], [regions_fa, split_output]) and not args.force:
         logger.info("Regions FASTA already exists: %s", regions_fa)
     else:
         run(["klassify", "extract-bam", str(regions_tsv), str(f1_bam)], cwd=work)
         # Breakpoint calling on extracted reads
         # (output files are produced next to input; klassify decides names internally)
-        run(["klassify", "breakpoint", str(kmers_bc), str(regions_fa)], cwd=work)
-
-    # Split reads at breakpoints
-    split_input = regions_fa
-    split_output = work / "f1_classify.regions.split.fasta"
-    if not need_update(split_input, split_output) and not args.force:
-        logger.info("Split reads already exist: %s", split_output)
-    else:
-        run([sys.executable, str(split_script), str(split_input)], cwd=work)
+        run(["klassify", "breakpoint", str(kmers_bc), str(regions_fa), "--split"], cwd=work)
 
     # Remap the split reads to parents to get a crisp ROI BAM
     if not need_update(split_output, roi_bam) and not args.force:
