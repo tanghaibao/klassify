@@ -8,7 +8,7 @@ in parallel.
 Usage:
   python build_reads_batch.py --jobs 8
 """
-from __future__ import annotations
+
 import argparse
 import os
 import sys

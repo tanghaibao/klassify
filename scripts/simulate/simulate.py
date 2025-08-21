@@ -114,8 +114,10 @@ def main():
     logger.info(res)
 
     # Prepare input files for the klassify pipeline
-    prepare_input(res, args.ref, args.mosaics, args.out)
+    # prepare_input(res, args.ref, args.mosaics, args.out)
     logger.info("Input files prepared in `%s`", args.out)
+
+    # Run klassify pipeline
 
 
 if __name__ == "__main__":
