@@ -40,7 +40,7 @@ def run_one(script: Path, fasta_path: str) -> tuple[str, int]:
     cmd = [sys.executable, str(script), fasta_path]
     # Inherit stdout/stderr so you can see script output live per task
     proc = run(cmd)
-    return (fasta_path, proc.returncode)
+    return fasta_path, proc.returncode
 
 
 def main():
