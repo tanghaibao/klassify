@@ -1,3 +1,33 @@
+//! From noisy breakpoints to confident crossover pairs.
+//!
+//! Purpose: Aggregate per-read Breakpoints into genomic “sites”, connect compatible
+//! sites into candidate left/right pairs that describe crossover intervals, then
+//! select a high-support, non-overlapping set using a greedy strategy.
+//!
+//! Inputs: Breakpoint records/TSV with origin direction and per-side support;
+//! parameters for clustering radius, min reads per site, orientation rules,
+//! max pair distance, and min pair support.
+//!
+//! Steps:
+//! 1) Cluster breakpoints by contig/strand/direction within a radius to form Sites;
+//!    score by unique reads and unique-k counts.
+//! 2) Create candidate pairs between compatible Sites that co-occur on reads in
+//!    the correct order and within distance limits; weight by supporting-read count,
+//!    read-ID overlap, direction concordance, and dispersion penalties.
+//! 3) Greedy selection: sort pairs by weight; accept a pair if it does not reuse
+//!    a Site already chosen; continue until exhaustion.
+//! 4) Final QC and emit tables/BED for selected pairs and underlying sites.
+//!
+//! Output: PairedRegion/crossover table with left/right site summaries, weight,
+//! support counts, optional read IDs, and QC flags.
+//!
+//! Notes: If parent-to-parent alignment is available (PAF/chain), coordinates can be
+//! normalized before pairing; otherwise pairing is read-centric. Parameters control
+//! the recall–precision trade-off.
+//!
+//! Complexity: clustering is near-linear; greedy selection is O(E log E) on the
+//! number of pruned candidate pairs E.
+
 use crate::tools::graph_matching::greedy_max_weight_matching;
 use clap::Parser;
 use log::{info, warn};

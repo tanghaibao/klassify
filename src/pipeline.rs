@@ -1,3 +1,45 @@
+//! Orchestrate the end-to-end breakpoint→crossover pipeline.
+//!
+//! Purpose: Drive all stages from raw reads and parental references to a final,
+//! high-confidence set of crossover pairs, wiring together internal modules and
+//! external tools with sensible defaults, parallelism, and resumability.
+//!
+//! Typical inputs:
+//! - F1 reads (FA/FASTQ)
+//! - Parental read sets and/or combined parental reference (FASTA)
+//! - Parameters: k, window size, clustering radius, distance limits, min supports,
+//!   thread count, temp/output directories, and flags like --resume/--keep-temp.
+//!
+//! Main stages (enabled by flags and auto-skipped if outputs exist):
+//! 1) Preflight: validate inputs, check external tools in PATH, create work dirs.
+//! 2) Index: build or load parent-specific unique k-mer index.
+//! 3) Label: annotate F1 reads with parental origin per k-mer (streaming).
+//! 4) Breakpoint calling: invoke `breakpoint` module to emit per-read calls/TSV.
+//! 5) (Optional) Split: cut reads at calls to segments for mapping/debugging.
+//! 6) Mapping: align segments or full reads to parental refs (e.g. minimap2),
+//!    produce PAF/BAM for coordinate normalization and QC.
+//! 7) Site clustering: group breakpoint calls into left/right sites with support.
+//! 8) Pairing: form candidate left↔right pairs and select non-overlapping pairs
+//!    with a greedy chooser; write final crossover table.
+//! 9) Reports: dump TSV/BED, basic metrics, and logs for each stage.
+//!
+//! Outputs:
+//! - Breakpoint TSV per read, site BED/TSV, paired-region (crossover) table,
+//!   optional segment FASTA/FASTQ and alignment files for inspection.
+//!
+//! Execution model:
+//! - Parallel where safe (I/O bounded stages are batched; CPU heavy stages use
+//!   `--jobs`). Each stage declares its products and can be resumed via stamps.
+//! - Errors fail fast with context; partial results are left in temp for audit.
+//!
+//! Notes:
+//! - Coordinates can be normalized to a chosen reference if alignments are present;
+//!   otherwise the pipeline operates in read space.
+//! - Parameters balance recall vs precision; presets are provided for long reads.
+//!
+//! Complexity: dominated by mapping and per-read scanning; other stages are near-linear
+//! in the number of breakpoints and candidate pairs.
+
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{Parser, ValueEnum};
 use log::{debug, info};

@@ -60,13 +60,34 @@ Suppose you have 3 input files, with a toy example available in `examples`:
 - `f1_reads.fa`: the progeny reads
 - `parent_reads.fa`: the parental reads
 
+The simplest way to run the tool is to use the following commands:
+
+```bash
+klassify pipeline f1_reads parent_reads.fa parents.genome.fa
+```
+
+That's it! The breakpoint locations in the parental genomes are in
+`f1_classify.roi.paired.regions`. The output may look like this:
+
+```
+SoChr01B:71411-81028
+SoChr01F:81751-88094
+```
+
+These indicate that the breakpoint is between `SoChr01B:71411-81028` and
+`SoChr01F:81751-88094`. Every two lines indicate a pair of breakpoints in this file.
+
+This will run the entire pipeline, which is sufficient for small genomes. However, for larger genomes,
+users are encouraged to follow the steps below to run the pipeline in a more controlled manner. Many steps
+can run on a bunch of FASTA/FASTQ files (for example, by first using `faSplit`) to achieve better parallelism on
+larger datasets:
+
 1. Create a database of unique kmers from the parental genomes
 
 ```console
 cd examples
 mkdir -p ref f1_reads f1_classify parent_reads parent_classify
-faSplit byname parents.genome.fa ref/
-klassify build ref/*.fa -o kmers.bc
+klassify build parents.genome.fa -o kmers.bc
 ```
 
 This generates an index for all the unique kmers (present in a single contig/chromosome).
@@ -91,20 +112,29 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
 ```
 
 4. Using parent reads as ‘control’, identify the ‘chimeric’ regions that show up with F1 reads, but NOT with parent
-   reads (so we are not affected by assembly errors)
+   reads (so we are not affected by assembly errors).
 
 ```console
 klassify regions f1_classify.bam parent_classify.bam
 ```
 
-That's it! The breakpoint locations in the parental genomes are in
-`f1_classify.regions.tsv`, where column 2 shows the supported
-depth within each consecutive 10kb bin around the breakpoint (by default: at
-least 5 supported reads):
+Note that at this stage, we already have rough breakpoint locations (10kb resolution) in the parental genomes are in
+-`f1_classify.regions.tsv`. To further refine the breakpoint locations, we run two more steps below.
+
+5. Extract the reads that are classified as ‘chimeric’ and split the reads based on disjoint kmers
+   and map the split reads to the parents reference
 
 ```console
-SoChr01B:70000-90000	13,6
-SoChr01F:80000-90000	11
+klassify extract-bam f1_classify.regions.tsv f1_classify.bam
+klassify breakpoint kmers.bc f1_classify.regions.fasta
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.regions.split.fasta \
+   | samtools sort -@ 8 -o f1_classify.roi.bam
+```
+
+6. Finally, we can extract pairs of crossover regions and their read support
+
+```
+klassify cluster-pairs f1_classify.roi.bam > f1_classify.roi.tsv
 ```
 
 The breakpoint locations can then be visualized in IGV for read evidence in

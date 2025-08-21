@@ -22,3 +22,15 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa parent_classi
 #    up with F1 reads, but NOT with parent reads (so we are not affected by
 #    assembly errors)
 klassify regions f1_classify.bam parent_classify.bam
+
+# 5. Extract the reads that are classified as ‘chimeric’ and split the reads based on disjoint kmers
+#    and map the split reads to the parents reference
+klassify extract-bam f1_classify.regions.tsv f1_classify.bam
+klassify breakpoint kmers.bc f1_classify.regions.fasta
+minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.regions.split.fasta \
+  | samtools sort -@ 8 -o f1_classify.roi.bam
+
+# 6. Finally, we can extract pairs of crossover regions and their read support
+klassify cluster-pairs f1_classify.roi.bam > f1_classify.roi.tsv
+echo "Crossover regions:"
+cat f1_classify.roi.paired.regions

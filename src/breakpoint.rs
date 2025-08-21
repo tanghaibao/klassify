@@ -1,3 +1,25 @@
+//! Detect per-read recombination breakpoints from k-mer origin calls.
+//!
+//! Purpose: Given long reads whose k-mers are labeled by parental origin (A, B, or ambiguous),
+//! this module finds transition points where the dominant origin switches and emits
+//! candidate breakpoints with quality metrics.
+//!
+//! Inputs: iterator of reads and k-mer→origin lookup; parameters for k, window size,
+//! min run length, min unique k-mers on each side, min distance to read ends, and
+//! merge distance for nearby calls.
+//!
+//! Method: slide a window to vote A/B, suppress short flips (hysteresis), call transitions,
+//! refine the position by maximizing contrast in unique-k support across a local window,
+//! compute per-breakpoint stats, and optionally merge very close calls.
+//!
+//! Output: per-read Breakpoint records (read_id, pos, from→to, left/right support,
+//! span, confidence, flags) and helpers to write TSVs or split reads at calls.
+//!
+//! Edge cases: low support and long ambiguous stretches are ignored; multiple switches
+//! in one molecule are returned in order.
+//!
+//! Complexity: linear in read length; streaming-friendly.
+
 use crate::tools::info::{load_kmer_db, map_kmer_to_file};
 use crate::utils::{prefix_until_dot, SingletonKmers};
 
