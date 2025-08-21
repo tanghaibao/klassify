@@ -39,7 +39,7 @@ def main():
         "--jobs",
         "-j",
         type=int,
-        default=8,
+        default=16,
         help="Number of parallel workers (default: %(default)d)",
     )
     parser.add_argument(
@@ -90,3 +90,7 @@ def main():
     else:
         logger.info("[SUMMARY] All %d tasks completed successfully.", total_jobs)
         sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
