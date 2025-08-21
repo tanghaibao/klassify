@@ -32,7 +32,6 @@ from typing import List
 from jcvi.apps.base import logger, mkdir, sh
 from jcvi.formats.base import FileMerger
 
-DEFAULT_SCRIPT_PATH = Path(__file__).parent.parent
 PARENTS_GENOMES = "parents.genomes.fa"
 PARENT_READS = "parent_reads.fq.gz"
 F1_READS = "f1_reads.fq.gz"
@@ -174,12 +173,6 @@ def main():
         action="store_true",
         help="Remove run dir after processing.",
     )
-    p.add_argument(
-        "--scripts-dir",
-        type=Path,
-        default=DEFAULT_SCRIPT_PATH,
-        help="Directory containing helper scripts (pipeline.py).",
-    )
 
     args = p.parse_args()
     genomes = get_genomes(args.ref)
@@ -194,10 +187,7 @@ def main():
     # Run klassify pipeline
     cwd = Path.cwd()
     os.chdir(cwd / out_dir)
-    klassify_script = args.scripts_dir / "pipeline.py"
-    if not klassify_script.exists():
-        raise FileNotFoundError(f"Pipeline script not found: {klassify_script}")
-    cmd = f"python {klassify_script} {F1_READS} {PARENT_READS} {PARENTS_GENOMES}"
+    cmd = f"klassify pipeline {F1_READS} {PARENT_READS} {PARENTS_GENOMES}"
     if not op.exists(REGIONS_OUTPUT):
         sh(cmd)
     os.chdir(cwd)
