@@ -1,11 +1,11 @@
 use clap::Parser;
 use libc::{SIGPIPE, SIG_DFL};
 
+use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
 use klassify::extract;
 use klassify::regions;
-use klassify::tools::breakpoint;
 use klassify::tools::extract_bam;
 use klassify::tools::info;
 use klassify::tools::sort_bam;
@@ -54,7 +54,7 @@ fn main() {
             build::build(&build.fasta_files, &build.output_file, build.kmer_size);
         }
         SubCommand::Breakpoint(breakpoint) => {
-            breakpoint::breakpoint(&breakpoint.bincode_file, &breakpoint.fasta_files);
+            breakpoint::breakpoint(&breakpoint);
         }
         SubCommand::Classify(classify) => {
             classify::classify(
