@@ -138,7 +138,7 @@ pub fn pipeline(args: PipelineArgs) -> Result<()> {
     let regions_fa = work.join("f1_classify.regions.fasta");
     let roi_bam = work.join("f1_classify.roi.bam");
     let roi_tsv = work.join("f1_classify.roi.tsv");
-    let paired_regions = work.join("f1_classify.paired.regions"); // kept to mirror Python
+    let paired_regions = work.join("f1_classify.roi.paired.regions"); // kept to mirror Python
 
     // 1) Build unique k-mers from parental genomes
     if up_to_date(&[&args.parents_ref], &[&kmers_bc]) && !args.force {

@@ -60,9 +60,11 @@ Suppose you have 3 input files, with a toy example available in `examples`:
 - `f1_reads.fa`: the progeny reads
 - `parent_reads.fa`: the parental reads
 
+### Pipeline usage
+
 The simplest way to run the tool is to use the following commands:
 
-```bash
+```console
 klassify pipeline f1_reads parent_reads.fa parents.genome.fa
 ```
 
@@ -77,7 +79,9 @@ SoChr01F:81751-88094
 These indicate that the breakpoint is between `SoChr01B:71411-81028` and
 `SoChr01F:81751-88094`. Every two lines indicate a pair of breakpoints in this file.
 
-This will run the entire pipeline, which is sufficient for small genomes. However, for larger genomes,
+### Step-by-step usage
+
+The `pipeline` will run the entire pipeline, which is sufficient for small genomes. However, for larger genomes,
 users are encouraged to follow the steps below to run the pipeline in a more controlled manner. Many steps
 can run on a bunch of FASTA/FASTQ files (for example, by first using `faSplit`) to achieve better parallelism on
 larger datasets:
@@ -133,7 +137,7 @@ minimap2 -t 80 -ax map-hifi --eqx --secondary=no parents.genome.fa f1_classify.r
 
 6. Finally, we can extract pairs of crossover regions and their read support
 
-```
+```console
 klassify cluster-pairs f1_classify.roi.bam > f1_classify.roi.tsv
 ```
 
