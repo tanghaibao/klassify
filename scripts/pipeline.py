@@ -18,13 +18,12 @@ Two helper scripts (provide via --scripts-dir or absolute paths):
   - cluster_to_paired_regions.py
 """
 
-from __future__ import annotations
 import argparse
 from pathlib import Path
-import sys
+
+from jcvi.apps.base import logger, mkdir, need_update
 
 from simulate.utils import check_tool, run, run_pipe
-from jcvi.apps.base import logger, mkdir, need_update
 
 DEFAULT_SCRIPT_PATH = Path(__file__).parent
 
@@ -106,7 +105,6 @@ def main():
     regions_tsv = work / "f1_classify.regions.tsv"
     regions_fa = work / "f1_classify.regions.fasta"
     roi_bam = work / "f1_classify.roi.bam"
-    roi_bed = work / "f1_classify.roi.bed"
     roi_tsv = work / "f1_classify.roi.tsv"
     paired_regions = work / "f1_classify.paired.regions"
 
@@ -294,20 +292,13 @@ def main():
             stdout_path=roi_bam,
         )
 
-    # BAM → BED
-    if not need_update(roi_bam, roi_bed) and not args.force:
-        logger.info("ROI BED already exists: %s", roi_bed)
-    else:
-        with open(roi_bed, "wb") as out:
-            run(["bamToBed", "-i", str(roi_bam)], cwd=work, stdout=out)
-
     # Cluster paired regions
-    if not need_update(roi_bed, paired_regions) and not args.force:
+    if not need_update(roi_bam, paired_regions) and not args.force:
         logger.info("Paired regions TSV already exists: %s", paired_regions)
     else:
         with open(roi_tsv, "wb") as out:
             run(
-                [sys.executable, str(cluster_script), str(roi_bed)],
+                ["klassify", "cluster-pairs", roi_bam],
                 cwd=work,
                 stdout=out,
             )
@@ -321,7 +312,6 @@ def main():
         "  Regions TSV:     %s\n"
         "  Regions FASTA:   %s\n"
         "  ROI BAM:         %s\n"
-        "  ROI BED:         %s\n"
         "  ROI TSV:         %s\n"
         "  Paired Regions:  %s",
         kmers_bc,
@@ -330,7 +320,6 @@ def main():
         regions_tsv,
         regions_fa,
         roi_bam,
-        roi_bed,
         roi_tsv,
         paired_regions,
     )
