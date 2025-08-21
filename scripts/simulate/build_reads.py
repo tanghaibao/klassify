@@ -16,7 +16,6 @@ Equivalent to:
     --report-file ccs_report.txt --log-file ccs.log
 """
 
-from __future__ import annotations
 import argparse
 import os
 import sys

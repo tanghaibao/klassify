@@ -15,7 +15,6 @@ This creates A_B/, A_C/, ... and runs:
   python build_mosaic.py <A.fa> <B.fa> [--extra ...]   (cwd = A_B/)
 """
 
-from __future__ import annotations
 import argparse
 import os
 import sys

@@ -13,6 +13,7 @@ from jcvi.formats.fasta import Fasta
 
 SUCCESS, FAIL, NOT_ENOUGH_KMERS = "SUCCESS", "FAIL", "NOT_ENOUGH_KMERS"
 KMER_THRESHOLD = 30
+REGION_SEPARATOR = "@"
 
 
 def main(args: List[str]):
@@ -41,7 +42,7 @@ def get_breakpoint(
     """
     Given a read and its sub-beds, determine the breakpoint
     """
-    ra, rb, orig_read = read.split("_", 2)
+    ra, rb, orig_read = read.split(REGION_SEPARATOR, 2)
     sids = [b.accn.split(":", 1)[0] for b in sb]
     n = len(sids)
 

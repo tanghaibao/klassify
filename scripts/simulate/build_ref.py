@@ -26,8 +26,6 @@ python extract_chr1_to_ref.py --glob "genomes/*.fa.gz" --jobs 4
 python extract_chr1_to_ref.py --pattern "(?i)^NC_003070(\.|$)"   # TAIR10 Chr1 RefSeq
 """
 
-from __future__ import annotations
-
 import argparse
 import gzip
 import re

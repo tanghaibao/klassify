@@ -8,7 +8,7 @@ in parallel.
 Usage:
   python build_reads_batch.py --jobs 8
 """
-from __future__ import annotations
+
 import argparse
 import os
 import sys
@@ -40,7 +40,7 @@ def run_one(script: Path, fasta_path: str) -> tuple[str, int]:
     cmd = [sys.executable, str(script), fasta_path]
     # Inherit stdout/stderr so you can see script output live per task
     proc = run(cmd)
-    return (fasta_path, proc.returncode)
+    return fasta_path, proc.returncode
 
 
 def main():

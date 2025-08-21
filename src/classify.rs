@@ -1,5 +1,5 @@
 use crate::tools::info::{load_kmer_db, map_kmer_to_file};
-use crate::utils::{prefix, ClassifyResults, SingletonKmers};
+use crate::utils::{prefix, ClassifyResults, SingletonKmers, SEPARATOR};
 
 use clap::Parser;
 use log::{error, info};
@@ -220,7 +220,7 @@ fn filter_reads(rc: &str, prefix_length: usize) -> Vec<ReadClassification> {
             && scores.iter().sum::<i32>() >= SCORE_THRESHOLD
             && scores[1] >= MINOR_SCORE_THRESHOLD
         {
-            new_row.push(format!("{a}_{b}"));
+            new_row.push(format!("{a}{SEPARATOR}{b}"));
             filtered.push(new_row);
         }
     }
