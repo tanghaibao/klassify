@@ -10,6 +10,7 @@ Procedure:
     - parents.genomes.fa: concatenated N genomes
     - parent_reads.fq.gz: concatenated reads from the N genomes
     - f1_reads.fq.gz: concatenated reads from the mosaic genomes
+    - breakpoints.tsv: concatenated breakpoints from the mosaic genomes
 - Run klassify pipeline with the generated resources
 - Move results to the results directory
 """
@@ -17,15 +18,23 @@ Procedure:
 import argparse
 import os
 import os.path as op
+import pandas as pd
 import random
 
 from dataclasses import dataclass
 from itertools import batched
+from pathlib import Path
 from random import sample
 from typing import List
 
-from jcvi.apps.base import logger, mkdir
+from jcvi.apps.base import logger, mkdir, sh
 from jcvi.formats.base import FileMerger
+
+DEFAULT_SCRIPT_PATH = Path(__file__).parent
+PARENTS_GENOMES = "parents.genomes.fa"
+PARENT_READS = "parent_reads.fq.gz"
+F1_READS = "f1_reads.fq.gz"
+REGIONS_OUTPUT = "f1_classify.paired.regions"
 
 
 @dataclass
@@ -33,6 +42,13 @@ class SimulatedConfig:
     parents: List[str]
     gametes: List[str]
     seed: int
+
+    @property
+    def name(self):
+        """
+        Generate a name for the simulation based on the parents and seed.
+        """
+        return f"simulated_{'+'.join(self.gametes)}_seed{self.seed}"
 
 
 def get_genomes(ref_dir: str):
@@ -63,16 +79,15 @@ def admix(genomes: List[str], n: int, seed: int) -> SimulatedConfig:
     )
 
 
-def prepare_input(
-    config: SimulatedConfig, ref_dir: str, mosaics_dir: str, out_dir: str
-):
+def prepare_input(config: SimulatedConfig, ref_dir: str, mosaics_dir: str):
     """
     Prepare the input files for the klassify pipeline.
     """
+    out_dir = config.name
     mkdir(out_dir)
-    parents_genomes = op.join(out_dir, "parents.genomes.fa")
-    parent_reads = op.join(out_dir, "parent_reads.fq.gz")
-    f1_reads = op.join(out_dir, "f1_reads.fq.gz")
+    parents_genomes = op.join(out_dir, PARENT_READS)
+    parent_reads = op.join(out_dir, PARENT_READS)
+    f1_reads = op.join(out_dir, F1_READS)
     parents = [op.join(ref_dir, f"{p}.fa") for p in config.parents]
     # Concatenate parent genomes
     FileMerger(parents, parents_genomes).merge()
@@ -90,6 +105,47 @@ def prepare_input(
     logger.info("F1 reads written to `%s`", f1_reads)
 
 
+def prepare_output(config: SimulatedConfig, mosaics_dir: str, results_dir: str):
+    """
+    Prepare the output files for the klassify pipeline.
+    """
+    out_dir = config.name
+    mkdir(results_dir)
+    # Concatenate true breakpoints
+    breakpoints = []
+    for gamete in config.gametes:
+        bp_file = f"{mosaics_dir}/{gamete}/{gamete}.breakpoints.tsv"
+        if op.exists(bp_file):
+            breakpoints.append(pd.read_csv(bp_file, sep="\t"))
+    df = pd.concat(breakpoints, ignore_index=True)
+    df["A_breakpoint"] = df["A_chrom"] + ":" + df["A_bp_0based"].astype(str)
+    df["B_breakpoint"] = df["B_chrom"] + ":" + df["B_bp_0based"].astype(str)
+    df["Source"] = "true"
+    df = df[["Source", "A_breakpoint", "B_breakpoint"]]
+
+    # Now get the computed breakpoints
+    regions_output = op.join(out_dir, REGIONS_OUTPUT)
+    if not op.exists(regions_output):
+        raise FileNotFoundError(f"Regions output file not found: {regions_output}")
+    rows = [x.strip() for x in open(regions_output)]
+    for a, b in batched(rows, 2):
+        a_genome, b_genome = a.split("_", 1)[0], b.split("_", 1)[0]
+        if f"{a_genome}_{b_genome}" not in config.gametes:
+            a, b = b, a
+        df.append(
+            {
+                "Source": "computed",
+                "A_breakpoint": a,
+                "B_breakpoint": b,
+            },
+            ignore_index=True,
+        )
+
+    breakpoints_output = op.join(results_dir, f"{config.name}.breakpoints.tsv")
+    df.to_csv(breakpoints_output, sep="\t", index=False)
+    logger.info("True and computed breakpoint written to `%s`", breakpoints_output)
+
+
 def main():
     p = argparse.ArgumentParser(
         description="Simulate mosaic genomes and run the klassify pipeline."
@@ -100,24 +156,48 @@ def main():
     p.add_argument(
         "--mosaics", default="mosaics", help="Directory containing reference genomes."
     )
-    p.add_argument("--out", default="out", help="Directory to store the results.")
+    p.add_argument(
+        "--results-dir", default="results", help="Directory to store the results."
+    )
     p.add_argument(
         "-n", type=int, default=2, help="Number of genomes to use (2, 4, or 8)."
     )
     p.add_argument(
         "--seed", type=int, default=42, help="Random seed for reproducibility."
     )
+    p.add_argument(
+        "--scripts-dir",
+        type=Path,
+        default=DEFAULT_SCRIPT_PATH,
+        help="Directory containing helper scripts (pipeline.py).",
+    )
 
     args = p.parse_args()
     genomes = get_genomes(args.ref)
-    res = admix(genomes, args.n, seed=args.seed)
-    logger.info(res)
+    config = admix(genomes, args.n, seed=args.seed)
+    logger.info(config)
 
     # Prepare input files for the klassify pipeline
-    # prepare_input(res, args.ref, args.mosaics, args.out)
+    prepare_input(config, args.ref, args.mosaics)
     logger.info("Input files prepared in `%s`", args.out)
 
     # Run klassify pipeline
+    cwd = Path.cwd()
+    os.chdir(cwd)
+    klassify_script = args.scripts_dir / "pipeline.py"
+    if not klassify_script.exists():
+        raise FileNotFoundError(f"Pipeline script not found: {klassify_script}")
+    cmd = f"python {klassify_script} {F1_READS} {PARENT_READS} {PARENTS_GENOMES}"
+    if not op.exists(REGIONS_OUTPUT):
+        sh(cmd)
+    os.chdir(cwd)
+
+    # Write results to the output directory
+    prepare_output(
+        config,
+        args.mosaics,
+        args.results_dir,
+    )
 
 
 if __name__ == "__main__":
