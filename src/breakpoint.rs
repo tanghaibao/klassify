@@ -32,7 +32,7 @@ pub struct BreakpointArgs {
 }
 
 /// Public entry (call this from your main)
-pub fn breakpoint(args: &BreakpointArgs) {
+pub fn breakpoint(args: BreakpointArgs) {
     let singleton_kmers = load_kmer_db(&args.bincode_file);
     let kmer_to_file = map_kmer_to_file(&singleton_kmers);
 

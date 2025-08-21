@@ -31,7 +31,7 @@ pub struct ReadMaps {
 }
 
 /// Cluster pairs of subreads based on their alignment in a BAM file.
-pub fn cluster_pairs(args: &ClusterPairsArgs) {
+pub fn cluster_pairs(args: ClusterPairsArgs) {
     // ------- Pass 1: track the longest reference span per subread (QNAME) -------
     let mut seen_max: HashMap<String, i64> = HashMap::new();
     {

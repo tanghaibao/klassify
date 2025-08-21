@@ -7,6 +7,7 @@ use klassify::classify;
 use klassify::cluster_pairs;
 use klassify::extract;
 use klassify::extract_bam;
+use klassify::pipeline;
 use klassify::regions;
 use klassify::tools::info;
 use klassify::tools::sort_bam;
@@ -34,6 +35,8 @@ enum SubCommand {
     Extract(extract::ExtractArgs),
     #[clap(about = "Extract reads from BAM")]
     ExtractBam(extract_bam::ExtractBamArgs),
+    #[clap(about = "Run simple pipeline from start to end")]
+    Pipeline(pipeline::PipelineArgs),
     #[clap(about = "Prepare BAM files and generate depths for each bin")]
     Regions(regions::RegionsArgs),
     #[clap(about = "Sort BAM file by divergence")]
@@ -57,7 +60,7 @@ fn main() {
             build::build(&build.fasta_files, &build.output_file, build.kmer_size);
         }
         SubCommand::Breakpoint(breakpoint) => {
-            breakpoint::breakpoint(&breakpoint);
+            breakpoint::breakpoint(breakpoint);
         }
         SubCommand::Classify(classify) => {
             classify::classify(
@@ -68,7 +71,7 @@ fn main() {
             );
         }
         SubCommand::ClusterPairs(cluster_pairs) => {
-            cluster_pairs::cluster_pairs(&cluster_pairs);
+            cluster_pairs::cluster_pairs(cluster_pairs);
         }
         SubCommand::Info(info) => {
             info::info(&info.bincode_file);
@@ -86,6 +89,9 @@ fn main() {
                 &extract_bam.bam_file,
                 extract_bam.flank_size,
             );
+        }
+        SubCommand::Pipeline(pipeline) => {
+            _ = pipeline::pipeline(pipeline);
         }
         SubCommand::Regions(regions) => {
             regions::regions(
