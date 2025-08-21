@@ -271,7 +271,7 @@ def main():
         run(["klassify", "extract-bam", str(regions_tsv), str(f1_bam)], cwd=work)
         # Breakpoint calling on extracted reads
         # (output files are produced next to input; klassify decides names internally)
-        run(["klassify", "breakpoint", str(kmers_bc), str(regions_fa), "--split"], cwd=work)
+        run(["klassify", "breakpoint", str(kmers_bc), str(regions_fa)], cwd=work)
 
     # Remap the split reads to parents to get a crisp ROI BAM
     if not need_update(split_output, roi_bam) and not args.force:

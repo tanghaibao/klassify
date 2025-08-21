@@ -23,15 +23,9 @@ pub struct BreakpointArgs {
     pub bincode_file: String,
     /// FASTA/FASTQ files to process (gz ok)
     pub fasta_files: Vec<String>,
-
-    /// If set, do NOT emit BED; write split FASTA (*.split.fasta) instead
-    #[clap(long)]
-    pub split: bool,
-
     /// Minimum number of k-mers supporting each side of the breakpoint (split mode only)
     #[clap(long, default_value_t = DEFAULT_KMER_THRESHOLD)]
     pub kmer_threshold: usize,
-
     /// Region separator used in read headers, e.g. "A@B@read123" (split mode only)
     #[clap(long, default_value = DEFAULT_REGION_SEPARATOR)]
     pub region_sep: String,
@@ -42,79 +36,24 @@ pub fn breakpoint(args: &BreakpointArgs) {
     let singleton_kmers = load_kmer_db(&args.bincode_file);
     let kmer_to_file = map_kmer_to_file(&singleton_kmers);
 
-    if args.split {
-        // Precompute accession prefixes once
-        let accn_prefix: Vec<String> = singleton_kmers
-            .ids
-            .iter()
-            .map(|s| prefix_until_dot(s))
-            .collect();
+    // Precompute accession prefixes once
+    let accn_prefix: Vec<String> = singleton_kmers
+        .ids
+        .iter()
+        .map(|s| prefix_until_dot(s))
+        .collect();
 
-        args.fasta_files.par_iter().for_each(|f| {
-            split_reads_one(
-                &singleton_kmers,
-                &kmer_to_file,
-                &accn_prefix,
-                f,
-                args.kmer_threshold,
-                args.region_sep.chars().next().unwrap_or('@'),
-            );
-        });
-    } else {
-        // Original BED generation path (unchanged)
-        args.fasta_files.par_iter().for_each(|f| {
-            breakpoint_one_bed(&singleton_kmers, &kmer_to_file, f);
-        });
-    }
+    args.fasta_files.par_iter().for_each(|f| {
+        split_reads_one(
+            &singleton_kmers,
+            &kmer_to_file,
+            &accn_prefix,
+            f,
+            args.kmer_threshold,
+            args.region_sep.chars().next().unwrap_or('@'),
+        );
+    });
 }
-
-// =============================
-// Original BED path (as before)
-// =============================
-
-fn breakpoint_one_bed(
-    singleton_kmers: &SingletonKmers,
-    kmer_to_file: &HashMap<u64, usize>,
-    fasta_file: &str,
-) {
-    let mut reader = parse_fastx_file(fasta_file).expect("valid FASTA/FASTQ");
-    let output_file = Path::new(fasta_file).with_extension("bed");
-    let mut writer = BufWriter::new(File::create(&output_file).unwrap());
-    info!("Parsing `{}` → `{}`", fasta_file, output_file.display());
-
-    let kmer_size = singleton_kmers.kmer_size;
-    while let Some(record) = reader.next() {
-        let record = record.expect("valid record");
-        let seq = record.normalize(false);
-
-        // Get the first token of the ID
-        let id = String::from_utf8(record.id().to_vec())
-            .unwrap_or_else(|_| "unknown".into())
-            .split_whitespace()
-            .next()
-            .unwrap_or("unknown")
-            .to_string();
-
-        for (pos, kmer, _) in seq.bit_kmers(kmer_size, true) {
-            if let Some(&file_index) = kmer_to_file.get(&kmer.0) {
-                let to_write: String = format!(
-                    "{}\t{}\t{}\t{}:{}",
-                    id,
-                    pos,
-                    pos + kmer_size as usize,
-                    prefix_until_dot(&singleton_kmers.ids[file_index]),
-                    kmer.0
-                );
-                writeln!(writer, "{to_write}").unwrap();
-            }
-        }
-    }
-    info!("BED written to `{}`", output_file.display());
-}
-
-// =============================
-// Split mode (Python logic port)
-// =============================
 
 #[derive(Clone, Copy)]
 struct Hit {
@@ -123,6 +62,7 @@ struct Hit {
     file_idx: usize, // index into singleton_kmers.ids
 }
 
+/// Split reads based on k-mer hits
 fn split_reads_one(
     singleton_kmers: &SingletonKmers,
     kmer_to_file: &HashMap<u64, usize>,
@@ -315,6 +255,7 @@ fn choose_breakpoint<'a>(
     }
 }
 
+/// Write a FASTA record to the writer
 fn write_fasta<W: Write>(writer: &mut W, id: &str, seq: &[u8]) {
     // uppercase without per-base allocation in fmt
     let mut up = Vec::with_capacity(seq.len());

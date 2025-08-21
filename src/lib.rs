@@ -1,7 +1,9 @@
 pub mod breakpoint;
 pub mod build;
 pub mod classify;
+pub mod cluster_pairs;
 pub mod extract;
+pub mod extract_bam;
 pub mod regions;
 pub mod tools;
 pub mod utils;

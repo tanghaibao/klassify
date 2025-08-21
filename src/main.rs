@@ -4,9 +4,10 @@ use libc::{SIGPIPE, SIG_DFL};
 use klassify::breakpoint;
 use klassify::build;
 use klassify::classify;
+use klassify::cluster_pairs;
 use klassify::extract;
+use klassify::extract_bam;
 use klassify::regions;
-use klassify::tools::extract_bam;
 use klassify::tools::info;
 use klassify::tools::sort_bam;
 
@@ -25,6 +26,8 @@ enum SubCommand {
     Build(build::BuildArgs),
     #[clap(about = "Classify reads")]
     Classify(classify::ClassifyArgs),
+    #[clap(about = "Cluster paired cross-over regions")]
+    ClusterPairs(cluster_pairs::ClusterPairsArgs),
     #[clap(about = "Print details about the kmer table")]
     Info(info::InfoArgs),
     #[clap(about = "Extract reads")]
@@ -63,6 +66,9 @@ fn main() {
                 &classify.output_dir,
                 classify.prefix_length,
             );
+        }
+        SubCommand::ClusterPairs(cluster_pairs) => {
+            cluster_pairs::cluster_pairs(&cluster_pairs);
         }
         SubCommand::Info(info) => {
             info::info(&info.bincode_file);
