@@ -35,7 +35,7 @@ from jcvi.formats.base import FileMerger
 PARENTS_GENOMES = "parents.genomes.fa"
 PARENT_READS = "parent_reads.fq.gz"
 F1_READS = "f1_reads.fq.gz"
-REGIONS_OUTPUT = "f1_classify.paired.regions"
+REGIONS_OUTPUT = "f1_classify.roi.paired.regions"
 
 
 @dataclass
