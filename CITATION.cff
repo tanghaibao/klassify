@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use KLASSIFY, please cite the archived software release."
+title: "KLASSIFY: classify chimeric reads based on unique k-mer contents"
+type: software
+authors:
+  - family-names: Tang
+    given-names: Haibao
+repository-code: "https://github.com/tanghaibao/klassify"
+license: BSD-2-Clause
+version: "0.1.6"
+date-released: "2026-06-25"
+abstract: "KLASSIFY classifies chimeric reads based on unique k-mer contents and identifies breakpoint locations in progeny reads with parental reads as controls."
+keywords:
+  - genomics
+  - k-mers
+  - chimeric reads
+  - breakpoints
+  - trio binning

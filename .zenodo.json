@@ -1,0 +1,27 @@
+{
+  "title": "KLASSIFY: classify chimeric reads based on unique k-mer contents",
+  "upload_type": "software",
+  "description": "KLASSIFY classifies chimeric reads based on unique k-mer contents and identifies breakpoint locations in progeny reads with parental reads as controls.",
+  "creators": [
+    {
+      "name": "Tang, Haibao"
+    }
+  ],
+  "license": "bsd-2-clause",
+  "keywords": [
+    "genomics",
+    "k-mers",
+    "chimeric reads",
+    "breakpoints",
+    "trio binning"
+  ],
+  "access_right": "open",
+  "version": "0.1.6",
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/tanghaibao/klassify",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
