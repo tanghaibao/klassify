@@ -2,6 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/klassify.svg)](https://crates.io/crates/klassify)
 [![Github Actions](https://github.com/tanghaibao/klassify/actions/workflows/rust.yml/badge.svg)](https://github.com/tanghaibao/klassify/actions)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20838810.svg)](https://doi.org/10.5281/zenodo.20838810)
 
 ![klassify-logo](https://www.dropbox.com/scl/fi/bjvfamep0aoxka0dcg2zi/klassify-logo.png?rlkey=8vmvacehs2amuaoi0gvgyh28r&st=ohygf458&raw=1)
 
