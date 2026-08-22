@@ -1,6 +1,5 @@
 cff-version: 1.2.0
-message: "If you use KLASSIFY, please cite the paper below. To cite a specific
-  software version, use the archived release DOI."
+message: "If you use KLASSIFY, please cite the paper below. The software itself is archived on Zenodo and citable via the DOI listed here."
 title: "KLASSIFY: classify chimeric reads based on unique k-mer contents"
 type: software
 authors:
