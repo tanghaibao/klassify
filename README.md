@@ -157,6 +157,10 @@ Total expected run time on a desktop computer is ~1 minute.
 
 ## Algorithm
 
+![klassify-animation](docs/animation/klassify_algorithm.gif)
+
+_Every step of the pipeline, animated ([source](docs/animation))._
+
 The KLASSIFY pipeline identifies the breakpoints using the set of F1 reads,
 with parent reads as control. The breakpoints identified from the F1 reads were
 then mapped back to the parent reference sequences to obtain precise coordinates.
