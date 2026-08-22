@@ -24,10 +24,19 @@ config.background_color = "#0d1117"
 FG = "#e6edf3"
 MUTED = "#8b949e"
 DIM = "#30363d"
-A_COL = "#58a6ff"  # SoChr01A
-B_COL = "#ff7b39"  # SoChr01B
-C_COL = "#3fb950"  # SoChr01C
-D_COL = "#bc8cff"  # SoChr01D
+# The two sides of a breakpoint. Which chromosomes they stand for changes from
+# section to section - SoChr01A/SoChr01B in sections 0-4, SoChr01B/SoChr01F in
+# section 5 - so they are named for the side of the cut, not for one chromosome.
+SIDE_A = "#58a6ff"
+SIDE_B = "#ff7b39"
+# Further chromosomes of the same homologous group.
+CHR_C = "#3fb950"
+CHR_D = "#bc8cff"
+# The parent control track in section 3. Deliberately not the CHR_C green: that
+# is also KEEP, which would render the control reads in the same colour as the
+# "real crossover" verdict sitting next to them. Shares a hex with CHR_D, which
+# only ever appears in section 0, so the two never meet on screen.
+CONTROL = "#bc8cff"
 NOHIT = "#484f58"  # k-mer not unique to any single chromosome
 KEEP = "#3fb950"
 DROP = "#f85149"
@@ -41,10 +50,15 @@ SAFE_W = 13.4  # keep everything inside the 14.2-unit frame
 def choose_breakpoint(labels, ra, rb, kmer_threshold=30):
     """Port of `choose_breakpoint` in src/breakpoint.rs.
 
-    Returns (idx, left_label, right_label, count_left, count_right, ab, ba)
-    where `ab[i] = pref_a[i] + suf_b[i]` and `ba[i] = pref_b[i] + suf_a[i]`.
+    Returns (idx, left_label, right_label, count_left, count_right, ab, ba,
+    status) where `ab[i] = pref_a[i] + suf_b[i]`, `ba[i] = pref_b[i] +
+    suf_a[i]`, and status is one of "OK" / "NOT_ENOUGH_KMERS" / "FAIL",
+    mirroring the Rust `BreakResult`. Returns None for an empty track, which
+    is the Rust's `BreakResult::Fail` on `n == 0`.
     """
     n = len(labels)
+    if n == 0:
+        return None
     eq_a = [lab == ra for lab in labels]
     eq_b = [lab == rb for lab in labels]
 
@@ -61,8 +75,10 @@ def choose_breakpoint(labels, ra, rb, kmer_threshold=30):
 
     ab = [pref_a[i] + suf_b[i] for i in range(n)]
     ba = [pref_b[i] + suf_a[i] for i in range(n)]
-    ab_max, ab_idx = max(ab), ab.index(max(ab))
-    ba_max, ba_idx = max(ba), ba.index(max(ba))
+    ab_max = max(ab)
+    ab_idx = ab.index(ab_max)
+    ba_max = max(ba)
+    ba_idx = ba.index(ba_max)
 
     if ab_max >= ba_max:  # same tie-break as the Rust `ab_max >= ba_max`
         idx, left, right = ab_idx, ra, rb
@@ -70,7 +86,14 @@ def choose_breakpoint(labels, ra, rb, kmer_threshold=30):
     else:
         idx, left, right = ba_idx, rb, ra
         c_left, c_right = pref_b[ba_idx], suf_a[ba_idx]
-    return idx, left, right, c_left, c_right, ab, ba
+
+    if idx + 1 >= n:
+        status = "FAIL"  # the cut lands past the last hit, nothing to split
+    elif c_left < kmer_threshold or c_right < kmer_threshold:
+        status = "NOT_ENOUGH_KMERS"
+    else:
+        status = "OK"
+    return idx, left, right, c_left, c_right, ab, ba, status
 
 
 def demo_hits():
@@ -90,8 +113,13 @@ def demo_hits():
 
 
 LABELS = demo_hits()
-IDX, LEFT_LAB, RIGHT_LAB, C_LEFT, C_RIGHT, AB, BA = choose_breakpoint(LABELS, "A", "B")
-COLOR_OF = {"A": A_COL, "B": B_COL, "C": C_COL}
+IDX, LEFT_LAB, RIGHT_LAB, C_LEFT, C_RIGHT, AB, BA, STATUS = choose_breakpoint(
+    LABELS, "A", "B"
+)
+# S4Breakpoint states on screen that both sides clear the 30 k-mer minimum, so
+# make the demo track prove it rather than take it on trust.
+assert STATUS == "OK", f"demo read should yield a usable breakpoint, got {STATUS}"
+COLOR_OF = {"A": SIDE_A, "B": SIDE_B, "C": CHR_C}
 
 
 # --- shared helpers --------------------------------------------------------
@@ -183,7 +211,7 @@ class S0Problem(Scene):
 
         # Parental genome: the homologous chromosomes of one polyploid group.
         names = ["SoChr01A", "SoChr01B", "SoChr01C", "SoChr01D"]
-        cols = [A_COL, B_COL, C_COL, D_COL]
+        cols = [SIDE_A, SIDE_B, CHR_C, CHR_D]
         bars = VGroup(*[chrom_bar(n, c, width=5.0) for n, c in zip(names, cols)])
         bars.arrange(DOWN, buff=0.40, aligned_edge=LEFT)
         bars.set_x(0.9).set_y(1.15)
@@ -198,8 +226,8 @@ class S0Problem(Scene):
 
         # One F1 read that starts on A and ends on B.
         read = VGroup(
-            Rectangle(width=2.2, height=0.28, stroke_width=0, fill_color=A_COL, fill_opacity=0.95),
-            Rectangle(width=2.2, height=0.28, stroke_width=0, fill_color=B_COL, fill_opacity=0.95),
+            Rectangle(width=2.2, height=0.28, stroke_width=0, fill_color=SIDE_A, fill_opacity=0.95),
+            Rectangle(width=2.2, height=0.28, stroke_width=0, fill_color=SIDE_B, fill_opacity=0.95),
         ).arrange(RIGHT, buff=0)
         read.set_x(bars[0][0].get_x()).set_y(-1.55)
         rl = Text("one F1 read", font_size=20, color=FG).next_to(read, LEFT, buff=0.32)
@@ -208,10 +236,10 @@ class S0Problem(Scene):
 
         # Each half docks onto the homolog it came from - no crossing arrows.
         seg_a = Rectangle(width=1.6, height=0.28, stroke_width=0,
-                          fill_color=A_COL, fill_opacity=0.95)
+                          fill_color=SIDE_A, fill_opacity=0.95)
         seg_a.move_to(bars[0][0].get_center() + LEFT * 1.1)
         seg_b = Rectangle(width=1.6, height=0.28, stroke_width=0,
-                          fill_color=B_COL, fill_opacity=0.95)
+                          fill_color=SIDE_B, fill_opacity=0.95)
         seg_b.move_to(bars[1][0].get_center() + RIGHT * 1.1)
         self.play(TransformFromCopy(read[0], seg_a), run_time=1.1)
         self.play(TransformFromCopy(read[1], seg_b), run_time=1.1)
@@ -244,7 +272,7 @@ class S1Build(Section, Scene):
         self.open_section()
 
         names = ["SoChr01A", "SoChr01B", "SoChr01C"]
-        cols = [A_COL, B_COL, C_COL]
+        cols = [SIDE_A, SIDE_B, CHR_C]
         bars = VGroup(*[chrom_bar(n, c, width=5.2) for n, c in zip(names, cols)])
         bars.arrange(DOWN, buff=0.52, aligned_edge=LEFT)
         bars.set_x(0.6).set_y(1.55)
@@ -337,9 +365,9 @@ class S2Classify(Section, Scene):
         self.open_section()
 
         legend = VGroup(
-            VGroup(Square(0.18, fill_color=A_COL, fill_opacity=0.9, stroke_width=0),
+            VGroup(Square(0.18, fill_color=SIDE_A, fill_opacity=0.9, stroke_width=0),
                    Text("unique to SoChr01A", font_size=16, color=MUTED)).arrange(RIGHT, buff=0.14),
-            VGroup(Square(0.18, fill_color=B_COL, fill_opacity=0.9, stroke_width=0),
+            VGroup(Square(0.18, fill_color=SIDE_B, fill_opacity=0.9, stroke_width=0),
                    Text("unique to SoChr01B", font_size=16, color=MUTED)).arrange(RIGHT, buff=0.14),
             VGroup(Square(0.18, fill_color=NOHIT, fill_opacity=0.3, stroke_width=0),
                    Text("not unique", font_size=16, color=MUTED)).arrange(RIGHT, buff=0.14),
@@ -438,7 +466,8 @@ class S3Control(Section, Scene):
             for i in range(1, n_bins)
         ])
         ref_lbl = Text("parental reference, 10 kb bins", font_size=17, color=MUTED)
-        ref_lbl.next_to(ref, DOWN, buff=0.12).align_to(ref, RIGHT)
+        # Below-left: below-right is where the "assembly artefact" call sits.
+        ref_lbl.next_to(ref, DOWN, buff=0.12).align_to(ref, LEFT)
         self.play(FadeIn(ref), Create(ticks, lag_ratio=0.03), FadeIn(ref_lbl))
 
         def bin_x(i):
@@ -454,12 +483,12 @@ class S3Control(Section, Scene):
             ])
 
         x_real, x_art = bin_x(4), bin_x(12)
-        f1_real = pileup(x_real, 8, A_COL, 0.5, up=True)
-        f1_art = pileup(x_art, 7, A_COL, 0.5, up=True)
-        p_art = pileup(x_art, 6, C_COL, -0.1, up=False)
+        f1_real = pileup(x_real, 8, SIDE_A, 0.5, up=True)
+        f1_art = pileup(x_art, 7, SIDE_A, 0.5, up=True)
+        p_art = pileup(x_art, 6, CONTROL, -0.1, up=False)
 
-        f1_lbl = Text("F1 chimeric reads", font_size=18, color=A_COL).set_y(2.15).set_x(-4.6)
-        p_lbl = Text("parent chimeric reads (control)", font_size=18, color=C_COL)
+        f1_lbl = Text("F1 chimeric reads", font_size=18, color=SIDE_A).set_y(2.15).set_x(-4.6)
+        p_lbl = Text("parent chimeric reads (control)", font_size=18, color=CONTROL)
         p_lbl.set_y(-1.5).set_x(-4.0)
 
         self.play(
@@ -593,10 +622,10 @@ class S4Breakpoint(Section, Scene):
         self.play(FadeOut(alt), FadeOut(alt_lbl))
 
         # Support on each side has to clear 30 k-mers.
-        left_brace = Brace(VGroup(*track[: IDX + 1]), UP, buff=0.08, color=A_COL)
-        right_brace = Brace(VGroup(*track[IDX + 1:]), UP, buff=0.08, color=B_COL)
-        left_t = Text(f"{C_LEFT} A-hits", font_size=18, color=A_COL).next_to(left_brace, UP, buff=0.06)
-        right_t = Text(f"{C_RIGHT} B-hits", font_size=18, color=B_COL).next_to(right_brace, UP, buff=0.06)
+        left_brace = Brace(VGroup(*track[: IDX + 1]), UP, buff=0.08, color=SIDE_A)
+        right_brace = Brace(VGroup(*track[IDX + 1:]), UP, buff=0.08, color=SIDE_B)
+        left_t = Text(f"{C_LEFT} A-hits", font_size=18, color=SIDE_A).next_to(left_brace, UP, buff=0.06)
+        right_t = Text(f"{C_RIGHT} B-hits", font_size=18, color=SIDE_B).next_to(right_brace, UP, buff=0.06)
         self.play(FadeOut(tlbl))
         self.play(GrowFromCenter(left_brace), GrowFromCenter(right_brace),
                   FadeIn(left_t), FadeIn(right_t))
@@ -618,8 +647,8 @@ class S4Breakpoint(Section, Scene):
             cut.animate.shift(DOWN * 1.9).set_opacity(0.35),
             run_time=1.0,
         )
-        id_left = Text("read|SoChr01A|0-9184", font_size=19, color=A_COL, font="Menlo")
-        id_right = Text("read|SoChr01B|9184-18320", font_size=19, color=B_COL, font="Menlo")
+        id_left = Text("read|SoChr01A|0-9184", font_size=19, color=SIDE_A, font="Menlo")
+        id_right = Text("read|SoChr01B|9184-18320", font_size=19, color=SIDE_B, font="Menlo")
         id_left.next_to(left_part, DOWN, buff=0.35)
         id_right.next_to(right_part, DOWN, buff=0.35)
         self.play(FadeIn(id_left), FadeIn(id_right))
@@ -640,8 +669,8 @@ class S5Pair(Section, Scene):
     def construct(self):
         self.open_section()
 
-        chr_l = chrom_bar("SoChr01B", A_COL, width=9.2, height=0.34)
-        chr_r = chrom_bar("SoChr01F", B_COL, width=9.2, height=0.34)
+        chr_l = chrom_bar("SoChr01B", SIDE_A, width=9.2, height=0.34)
+        chr_r = chrom_bar("SoChr01F", SIDE_B, width=9.2, height=0.34)
         chrs = VGroup(chr_l, chr_r).arrange(DOWN, buff=2.15, aligned_edge=LEFT)
         chrs.set_x(0.7).set_y(0.9)
         self.play(FadeIn(chr_l), FadeIn(chr_r))
@@ -654,12 +683,12 @@ class S5Pair(Section, Scene):
             jitter = (j - 2.5) * 0.09
             left_halves.add(
                 Rectangle(width=1.15, height=0.11, stroke_width=0,
-                          fill_color=A_COL, fill_opacity=0.9)
+                          fill_color=SIDE_A, fill_opacity=0.9)
                 .move_to([xa + jitter, chr_l[0].get_y() - 0.42 - j * 0.16, 0])
             )
             right_halves.add(
                 Rectangle(width=1.15, height=0.11, stroke_width=0,
-                          fill_color=B_COL, fill_opacity=0.9)
+                          fill_color=SIDE_B, fill_opacity=0.9)
                 .move_to([xb + jitter, chr_r[0].get_y() + 0.42 + j * 0.16, 0])
             )
 
@@ -686,8 +715,8 @@ class S5Pair(Section, Scene):
         self.wait(1.0)
 
         out = VGroup(
-            Text("SoChr01B:71411-81028", font_size=23, color=A_COL, font="Menlo"),
-            Text("SoChr01F:81751-88094", font_size=23, color=B_COL, font="Menlo"),
+            Text("SoChr01B:71411-81028", font_size=23, color=SIDE_A, font="Menlo"),
+            Text("SoChr01F:81751-88094", font_size=23, color=SIDE_B, font="Menlo"),
         ).arrange(DOWN, buff=0.14, aligned_edge=LEFT)
         out_box = SurroundingRectangle(out, buff=0.28, color=KEEP, stroke_width=2)
         out_lbl = Text("f1_classify.roi.paired.regions", font_size=17, color=MUTED, font="Menlo")

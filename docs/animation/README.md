@@ -35,8 +35,8 @@ manim -qh klassify_algorithm.py S4Breakpoint
 
 ## Staying honest
 
-Every threshold on screen is read from the Rust source, so the two should be
-changed together:
+Every threshold on screen is hard-coded here to match the current Rust default.
+Nothing parses `src/*.rs`, so the two have to be changed together:
 
 | On screen         | Source                                              |
 | ----------------- | --------------------------------------------------- |
