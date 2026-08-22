@@ -24,6 +24,14 @@ Following are examples of recominant reads identified by this tool:
 
 ![recombinant-read](https://www.dropbox.com/scl/fi/tduxwsh0wcy2zdw8zopdm/recombinant-reads.png?rlkey=xci43gwwy84dbcdvs2n7ekk18&st=sewwc9s0&raw=1)
 
+## How to cite
+
+> [!TIP]
+> The KLASSIFY method is now published in Nature!
+>
+> _Zhu et al. (2026) Uncovering the mechanism of female restitution in
+> sugarcane hybrids. [Nature](https://doi.org/10.1038/s41586-026-10863-3)_
+
 ## Installation
 
 If you don't have [Rust](https://rustup.rs/) installed:
