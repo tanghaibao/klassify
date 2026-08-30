@@ -8,10 +8,7 @@ repository = "https://github.com/tanghaibao/klassify"
 readme = "README.md"
 keywords = ["bioinformatics", "genomics", "kmer", "recombination", "sugarcane"]
 categories = ["science::bioinformatics", "command-line-utilities"]
-# Ship only what is needed to build and install the binary. Cargo otherwise packages
-# every file git does not ignore, including untracked ones: 0.1.6 went out from a dirty
-# tree carrying .idea/, __pycache__/*.pyc and ~30 example outputs. An allowlist makes
-# the package independent of whatever happens to be sitting in the working tree.
+# Without this, cargo also packages untracked working-tree files.
 include = ["/src", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE", "/CITATION.cff"]
 
 [dependencies]
