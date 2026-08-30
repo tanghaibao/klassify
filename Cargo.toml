@@ -1,9 +1,18 @@
 [package]
 name = "klassify"
 description = "Classify chimeric reads based on unique kmer contents"
-license-file = "LICENSE"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
+license = "BSD-2-Clause"
+repository = "https://github.com/tanghaibao/klassify"
+readme = "README.md"
+keywords = ["bioinformatics", "genomics", "kmer", "recombination", "sugarcane"]
+categories = ["science::bioinformatics", "command-line-utilities"]
+# Ship only what is needed to build and install the binary. Cargo otherwise packages
+# every file git does not ignore, including untracked ones: 0.1.6 went out from a dirty
+# tree carrying .idea/, __pycache__/*.pyc and ~30 example outputs. An allowlist makes
+# the package independent of whatever happens to be sitting in the working tree.
+include = ["/src", "/Cargo.toml", "/Cargo.lock", "/README.md", "/LICENSE", "/CITATION.cff"]
 
 [dependencies]
 anyhow = "1.0.98"

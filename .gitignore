@@ -13,3 +13,16 @@ target/
 docs/animation/media/
 docs/animation/*.mp4
 __pycache__/
+
+# Editor and OS cruft. 0.1.6 shipped .idea/ to crates.io because it was untracked
+# but not ignored, and cargo packages anything git does not ignore.
+.idea/
+.DS_Store
+
+# Outputs from examples/run_examples.sh. Only the input FASTAs and the driver
+# script are tracked; everything else under examples/ is regenerated.
+examples/*
+!examples/run_examples.sh
+!examples/f1_reads.fa
+!examples/parent_reads.fa
+!examples/parents.genome.fa
